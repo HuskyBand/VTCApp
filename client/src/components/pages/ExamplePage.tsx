@@ -2,6 +2,8 @@ import reactLogo from '@client/assets/react.svg';
 import viteLogo from '@client/assets/vite.svg';
 import heroImg from '@client/assets/hero.png';
 
+import './ExamplePage.css';
+
 import React from "react";
 
 export default function ExamplePage() {

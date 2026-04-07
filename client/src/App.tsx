@@ -1,27 +1,24 @@
-import React from "react";
-
 import {
-    BrowserRouter as Router,
     Routes,
     Route,
 } from "react-router";
 
-import ExamplePage from "./components/pages/ExamplePage";
-
-import './App.css';
-
+import IndexPage from "./components/pages/IndexPage";
+import LogoutPage from "./components/pages/LogoutPage";
+import RegisterPage from "./components/pages/RegisterPage";
+import LoginPage from "./components/pages/LoginPage";
 
 function App() {
-
   return (
     <>
-      <Router>
-          <Routes>
-              <Route path="/" element={<ExamplePage />} />
-          </Routes>
-      </Router>
+			<Routes>
+				<Route index element={<IndexPage />} />
+				<Route path="/logout" element={<LogoutPage />} />
+				<Route path="/login" element={<LoginPage />} />
+				<Route path="/register" element={<RegisterPage />} />
+			</Routes>
     </>
   )
 }
 
-export default App
+export default App;

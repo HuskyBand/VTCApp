@@ -23,7 +23,8 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
-			"@client/*": ["./src/*"]
+			"@client/*": ["./src/*"],
+			"@api/*": ["../packages/api/src/*"]
     }
   },
   "include": ["vite.config.ts"]
