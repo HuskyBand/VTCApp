@@ -5,6 +5,10 @@ export type LoginPayload = {
     password: string
 }
 
+export type LoginWithTokenPayload = {
+    token: string
+}
+
 export type LoginResponse = {
     token: string,
     user: User

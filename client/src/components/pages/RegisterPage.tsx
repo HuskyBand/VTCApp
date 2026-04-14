@@ -3,8 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 
 export default function RegisterPage() {
-	UserManager.loadFromStorage();
-
 	const nav = useNavigate();
 
 	React.useEffect(() => {

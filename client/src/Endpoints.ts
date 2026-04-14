@@ -11,32 +11,11 @@ export const Endpoints = {
      * `POST` - Create a new account with the provided name, username, email, and password.
      */
     AUTH_SIGNUP: '/auth/signup',
-
-    /**
-     * `GET` - Returns basic information about a station criteria.
-     * 
-     * `PATCH` - Updates the summary rubric for a criteria.
-     * 
-     * `DELETE` - Deletes a criteria.
-     */ 
-    CRITERIA: (criteriaId: string) => `/criteria/${criteriaId}`,
-    /** 
-     * `GET` - Returns the full rubric for a criteria.
-     * 
-     * `PATCH` - Updates the full rubric for a criteria.
-     */ 
-    CRITERIA_RUBRIC: (criteriaId: string) => `/criteria/${criteriaId}/rubric`,
-    /** 
-     * `GET` - Returns the status of a user with this criteria. Includes the most recent evaluator notes if any.
-     * 
-     * `POST` - Sets the status of a user with this criteria.
-     */ 
-    CRITERIA_STATUS: (criteriaId: string, userId: string) => `/criteria/${criteriaId}/status/${userId}`,
     
     /** 
-     * `POST` - Begins an evaluation at the specified station.
+     * `POST` - Begins an evaluation at a station.
      */ 
-    EVALUATION_LIST: `/evals/`,
+    EVALUATION_LIST: `/evals`,
     /** 
      * `POST` - Submits an evaluation.
      */ 
@@ -59,17 +38,44 @@ export const Endpoints = {
      */ 
     STATION: (stationId: string) => `/stations/${stationId}`,
     /** 
-     * `GET` - Returns a list of criteria IDs.
+     * `GET` - Returns a list of criteria summaries.
+     * 
+     * `POST` - Creates a new criteria.
      */ 
     STATION_CRITERIA_LIST: (stationId: string) => `/stations/${stationId}/criteria`,
+    /**
+     * `GET` - Returns basic information about a station criteria.
+     * 
+     * `PATCH` - Updates the summary rubric for a criteria.
+     * 
+     * `DELETE` - Deletes a criteria.
+     */ 
+    STATION_CRITERION_SUMMARY: (stationId: string, criterionId: string) => `/stations/${stationId}/criteria/${criterionId}`,
+    /** 
+     * `GET` - Returns the full rubric for a criteria.
+     * 
+     * `PATCH` - Updates the full rubric for a criteria.
+     */ 
+    STATION_CRITERION_RUBRIC: (stationId: string, criterionId: string) => `/stations/${stationId}/criteria/${criterionId}/rubric`,
+    /**
+     * `GET` - Returns a list of evaluations.
+     * 
+     * `POST` - Creates a new evaluation.
+     */ 
+    STATION_EVALUATION_LIST: (stationId: string) => `/stations/${stationId}/evaluations`,
+    /**
+     * `GET` - Returns the most recent evaluation for a user.
+     */ 
+    STATION_EVALUATION_LATEST: (stationId: string, userId: string = "@me") => `/stations/${stationId}/evaluations/${userId}`,
+
     /** 
      * `GET` - Tests for available instructors and returns them.
      */ 
-    STATION_INSTRUCTORS: (stationId: string) => `/stations/${stationId}/instructors`,
+    STATION_INSTRUCTOR_LIST: (stationId: string) => `/stations/${stationId}/instructors`,
     /** 
      * `GET` - Tests for available evaluators and returns them.
      */ 
-    STATION_EVALUATORS: (stationId: string) => `/stations/${stationId}/evaluators`,
+    STATION_EVALUATOR_LIST: (stationId: string) => `/stations/${stationId}/evaluators`,
 
 
     /** 
@@ -98,15 +104,7 @@ export const Endpoints = {
      */ 
     USER_ME: `/users/@me`,
     /** 
-     * `GET` - Returns a list of station IDs available to the current user.
+     * `GET` - Returns evaluation status for a station.
      */ 
-    USER_ME_STATIONS: `/users/@me/stations`,
-    /** 
-     * `GET` - Returns a list of criteria IDs available to the current user.
-     */ 
-    USER_ME_CRITERIA: `/users/@me/criteria`,
-    /** 
-     * `GET` - Returns evaluation status.
-     */ 
-    USER_ME_STATUS: (criteriaId: string) => `/users/@me/status/${criteriaId}`,
+    USER_ME_STATION: (stationId: string) => `/users/@me/station/${stationId}`,
 };

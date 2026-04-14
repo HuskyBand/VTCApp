@@ -1,4 +1,12 @@
-#center {
+.station-button {
+    min-width: 120px;
+}
+
+.sign-in-button {
+    min-width: 120px;
+}
+
+.center-section {
     display: flex;
     flex-direction: column;
     gap: 25px;
@@ -10,10 +18,6 @@
         padding: 32px 10px 24px;
         gap: 18px;
     }
-}
-
-.sign-in-button {
-    min-width: 120px;
 }
 
 #vtc-hero {
