@@ -1,9 +1,7 @@
-import type { StationListResponse } from "@api/station/Station";
-import { Endpoints } from "@client/Endpoints";
-import http from "@client/http/HttpClient";
 import UserManager from "@client/stores/UserManager";
 import { useNavigate } from "react-router";
 
+// Assumed to be logged in if this page is loaded.
 export default function HomePage() {
 	const nav = useNavigate();
 
@@ -12,7 +10,7 @@ export default function HomePage() {
         <section className="center-section">
             <div id="welcome">
                 <h1>Home</h1>
-                <h2>Welcome, {UserManager.name}!</h2>
+                <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
             </div>
             <div id="station-buttons">
                 <button onClick={() => {

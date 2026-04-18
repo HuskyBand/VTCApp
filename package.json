@@ -1,0 +1,6 @@
+{
+    "scripts": {
+        "client-dev": "cd ./client && npm run dev",
+        "server-dev": "cd ./server && npm run dev"
+    }
+}

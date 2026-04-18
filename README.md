@@ -2,6 +2,10 @@
 
 A VTC progress tracker for the University of Washington Husky Marching Band.
 
+### How to test:
+
+Run `npm run server-dev` and `npm run client-dev` to run both the server and client locally.
+
 ## Client (`client`)
 
 The React frontend. Sends HTTP requests to the server.

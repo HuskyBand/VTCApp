@@ -1,12 +1,18 @@
 import type { User } from "@api/user/User"
 import type { CriterionId } from "./Criteria";
 
-export enum EvaluationLevel {
-    None = 0,
-    Exemplary = 1,
-    Satisfactory = 2,
-    Developing = 3
-}
+export const EvaluationLevel = {
+    /** Has not been evaluated yet. */
+    None: 0,
+    /** Highest level. */
+    Exemplary: 1,
+    /** Passing level. */
+    Satisfactory: 2,
+    /** Non-passing level. */
+    Developing: 3
+} as const;
+
+export type EvaluationLevel = typeof EvaluationLevel[keyof typeof EvaluationLevel];
 
 export type CriterionEvaluation = {
     id: CriterionId,
@@ -17,15 +23,20 @@ export type CriterionEvaluation = {
 export type EvaluationResponse = {
     evaluator: User,
     evaluatee: User,
-    timestamp: EpochTimeStamp,
+    timestamp: number,
     criteria: CriterionEvaluation[]
 }
 
 export function summarizeEvaluation(response: EvaluationResponse | null): EvaluationLevel {
-    let level = EvaluationLevel.None;
+    let level: EvaluationLevel = EvaluationLevel.None;
 
     response?.criteria.forEach(e => {
         if (e.status > level) {
+            // In case anything gets out of bounds...
+            if (e.status > EvaluationLevel.Developing) {
+                e.status = EvaluationLevel.Developing;
+            }
+
             level = e.status;
         }
     });
