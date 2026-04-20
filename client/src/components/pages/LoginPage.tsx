@@ -3,8 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 
 export default function LoginPage() {
-	UserManager.loadFromStorage();
-
 	const nav = useNavigate();
 
 	React.useEffect(() => {
@@ -18,7 +16,12 @@ export default function LoginPage() {
         <h1>LOGIN</h1>
         <p>Press the button to do a fake login!</p>
         <button onClick={() => {
-            UserManager.setDevUser("awawawawa", "Testeroni", "Testerson");
+            UserManager.setUser("awawawawa", {
+                username: "testeroni",
+                firstName: "Tester",
+                lastName: "von Testerson",
+                permFlags: 0
+            });
             nav('/');
         }}>Login</button>
     </>

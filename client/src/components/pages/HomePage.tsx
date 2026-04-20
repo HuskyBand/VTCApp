@@ -36,6 +36,7 @@ const getStatusLabel = (status: string) => {
     }
 };
 
+// Assumed to be logged in if this page is loaded.
 export default function HomePage() {
     const nav = useNavigate();
     const [permission, setPermission] = useState(PermissionManager.permission);
@@ -53,7 +54,7 @@ export default function HomePage() {
                     <div className="header-with-dropdown">
                         <div>
                             <h1>Home</h1>
-                            <h2>Status</h2>
+                            <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
                         </div>
                         <div className="permission-selector">
                             <label htmlFor="permission">Test Permission:</label>

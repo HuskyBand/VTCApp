@@ -7,6 +7,7 @@ import IndexPage from "./components/pages/IndexPage";
 import LogoutPage from "./components/pages/LogoutPage";
 import RegisterPage from "./components/pages/RegisterPage";
 import LoginPage from "./components/pages/LoginPage";
+import NotFoundPage from "./components/pages/NotFoundPage";
 import StationDetail from "./components/pages/StationDetail";
 import GetEvaluated from "./components/pages/GetEvaluated";
 import StationEvaluationBegin from "./components/pages/StationEvaluationBegin";
@@ -51,6 +52,7 @@ function App() {
 						<EditVTC />
 					</ProtectedRoute>
 				} />
+				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
     </>
   )

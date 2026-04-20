@@ -1,62 +1,18 @@
 import { type LoginPayload, type LoginResponse } from '@api/auth/Login.ts';
-import type { User } from '@api/user/User';
+import { PermFlags, type User } from '@api/user/User';
 import { Endpoints } from '@client/Endpoints';
 import http from '@client/http/HttpClient';
 
+/** Manages the client user state. */
 class UserManager {
     private _authToken: string | null = null;
-    private _username: string | null = null;
-    private _name: string | null = null;
-
-    constructor() {
-        http.tokenProvider = this.safeGetAuthToken;
-
-        this.loadFromStorage();
-    }
+    private _user: User | null = null;
 
     private safeGetAuthToken(): string | null {
         return this._authToken;
     }
 
-    get isLoggedIn(): boolean {
-        return this._authToken !== null &&
-            this._username !== null &&
-            this._name !== null;
-    }
-
-    get authToken(): string {
-        if (this._authToken === null) {
-            throw "Requested authentication token when user wasn't logged in.";
-        }
-
-        return this._authToken;
-    }
-
-    get username(): string {
-        if (this._username === null) {
-            throw "Requested username when user wasn't logged in.";
-        }
-
-        return this._username;
-    }
-
-    get name(): string {
-        if (this._name === null) {
-            throw "Requested name when user wasn't logged in.";
-        }
-
-        return this._name;
-    }
-
-    clear(): void {
-        this._authToken = null;
-        this._username = null;
-        this._name = null;
-
-        this.saveToStorage();
-    }
-
-    saveToStorage(): void {
+    private saveToStorage(): void {
         if (this.isLoggedIn) {
             localStorage.setItem('user_data', JSON.stringify(this));
         } else {
@@ -64,7 +20,7 @@ class UserManager {
         }
     }
 
-    loadFromStorage(): void {
+    private loadFromStorage(): void {
         let data = localStorage.getItem('user_data');
 
         if (data) {
@@ -72,8 +28,7 @@ class UserManager {
 
             if (self) {
                 this._authToken = self._authToken;
-                this._username = self._username;
-                this._name = self._name;
+                this._user = self._user;
 
                 return;
             }
@@ -82,23 +37,71 @@ class UserManager {
         this.clear();
     }
 
-    private setUser(authToken: string, user: User) {
-        this._authToken = authToken;
-        this._username = user.username;
-        this._name = user.firstName;
+    constructor() {
+        http.tokenProvider = this.safeGetAuthToken;
+
+        this.loadFromStorage();
+    }
+
+    /** Checks if the client is logged in as a user. */
+    get isLoggedIn(): boolean {
+        return this._authToken !== null &&
+            this._user !== null;
+    }
+
+    /** Gets the current user. */
+    get currentUser(): User {
+        if (!this.isLoggedIn) {
+            throw "Attempted to get current user whilst not logged in.";
+        }
+
+        return this._user!;
+    }
+
+    /** Checks whether or not the current user is a section leader. */
+    get isLeadership(): boolean {
+        if (!this.isLoggedIn) {
+            return false;
+        }
+
+        return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsLeadership;
+    }
+
+    /** Checks whether or not the current user is a teaching assistant. */
+    get isTA(): boolean {
+        if (!this.isLoggedIn) {
+            return false;
+        }
+
+        return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsAssistant;
+    }
+
+    /** Checks whether or not the current user is a band director. */
+    get isDirector(): boolean {
+        if (!this.isLoggedIn) {
+            return false;
+        }
+
+        return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsDirector;
+    }
+
+    /** Clears the local auth cache, essentially logging the client out of the current account. */
+    clear(): void {
+        this._authToken = null;
+        this._user = null;
 
         this.saveToStorage();
     }
 
-    setDevUser(authToken: string, username: string, name: string) {
+    /** Manually sets the local auth cache. */
+    setUser(authToken: string, user: User) {
         this._authToken = authToken;
-        this._username = username;
-        this._name = name;
+        this._user = user;
 
         this.saveToStorage();
-
     }
 
+    /** Sends a login request to the server with the provided username and password. */
     async loginWithPassword(username: string, password: string): Promise<boolean> {
         let request: LoginPayload = { username, password };
         let response = await http.post<LoginResponse>(Endpoints.AUTH_LOGIN, request);

@@ -1,9 +1,7 @@
-import './OnboardingPage.css';
-
 export default function OnboardingPage() {
     return (
     <>
-        <section id="center">
+        <section className="center-section">
             <div id="vtc-hero">
                 <h1>VTC</h1>
                 <h2>Visual Training Circuit</h2>

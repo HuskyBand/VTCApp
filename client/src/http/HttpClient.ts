@@ -1,4 +1,4 @@
-import { DEFAULT_BASE_URL, DEFAULT_API_VERSION } from '@api/Constants.ts';
+import { DEFAULT_BASE_API_URL, DEFAULT_API_VERSION } from '@api/Constants.ts';
 
 export interface HttpResponse<T = unknown> {
 	ok: boolean;
@@ -17,7 +17,7 @@ export class HttpClient {
     private _tokenProvider?: () => string | null;
 
     constructor() {
-        this._baseUrl = DEFAULT_BASE_URL;
+        this._baseUrl = DEFAULT_BASE_API_URL;
         this._apiVersion = DEFAULT_API_VERSION;
     }
 
