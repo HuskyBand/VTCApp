@@ -15,7 +15,7 @@ export default function HomePage() {
             <div id="station-buttons">
                 <button onClick={() => {
                     nav('/station/1');
-                }}>Logout</button>
+                }}>Station 1 (not implemented)</button>
             </div>
             <div id="fake-logout">
                 <p>Press the button to do a fake logout!</p>
