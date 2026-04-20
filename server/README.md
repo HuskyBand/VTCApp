@@ -1,8 +1,1 @@
-```
-npm install
-npm run dev
-```
-
-```
-open http://localhost:3000
-```
+The main server program. It should handle all client requests and manage the user database.
