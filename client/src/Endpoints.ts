@@ -1,5 +1,10 @@
 export const Endpoints = {
     /**
+     * `POST` - Check if the server is alive.
+     */
+    HEALTH_CHECK: '/_health',
+
+    /**
      * `POST` - Login with the provided username and password.
      */
     AUTH_LOGIN: '/auth/login',

@@ -3,40 +3,40 @@ import { Hono, type ExecutionContext } from 'hono'
 
 import { DEFAULT_BASE_API_PORT } from '@api/Constants';
 import { cors } from 'hono/cors';
-import type { BlankEnv, BlankSchema } from 'hono/types';
+import configureRoutes from './configureRoutes';
+import { logger } from 'hono/logger';
 
 // TODO: Add token-based authentication somewhere in this project.
 
 // TODO: Database management somewhere in this project.
 
 // TODO: Configure this more.
-let v1 = new Hono<BlankEnv, BlankSchema, "/v1/">();
+let routes = new Hono();
 
-v1.use(cors());
+routes.use(cors());
 
-// Defines a GET handler for `/`.
-v1.get('/', (c) => {
-    return c.json({
-        message: "Look this is running !!"
-    });
-});
+configureRoutes(routes);
 
-v1.get('/auth/logout', (c) => {
-    return c.text("Logged out successfully.");
-});
+const app = new Hono();
+app.route('/', routes);
+app.route('/v1', routes);
 
-const app = new Hono(v1);
-
+app.use(logger());
 app.use(cors());
-
-function loggedFetch(request: Request, Env?: {}, executionCtx?: ExecutionContext): Response | Promise<Response> {
-    console.info(request);
-    return app.fetch(request, Env, executionCtx);
-}
+app.notFound((ctx) => {
+    return ctx.json({
+        // TODO: Change this based on path..?
+        message: "It's go big or go home... and you couldn't go big.",
+    }, 404);
+});
+app.onError((err, ctx) => {
+    console.error(err);
+    return ctx.text("An internal server error occurred. Please report this immediately.", 500);
+});
 
 // Starts the server.
 serve({
-    fetch: loggedFetch,
+    fetch: app.fetch,
     port: DEFAULT_BASE_API_PORT
 }, (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);
