@@ -1,7 +1,7 @@
 export const enum PermFlags {
     IsLeadership, // Leadership will have important roles later down the line.
     IsAssistant, // TAs get more privilege.
-    IsDirector // Dr. Thunder himself is able to edit pretty much everything.
+    IsDirector // Dr. Jahlas himself is able to edit pretty much everything.
 }
 
 export type User = {
