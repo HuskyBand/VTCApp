@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ROLE
 -- Manageable roles reflecting actual app roles.
--- is_superuser: bypasses all permission checks (Dr. Jahlas).
+-- is_superaccount: bypasses all permission checks (Dr. Jahlas).
 -- is_global_evaluator: permanent evaluator + instructor access
 --   to all stations without needing an evaluator row (Leadership).
 -- Adding or renaming a role is a row change, not a migration.
@@ -15,17 +15,17 @@ CREATE TABLE role (
   role_id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name                TEXT        NOT NULL UNIQUE,
   description         TEXT,
-  is_superuser        BOOLEAN     NOT NULL DEFAULT FALSE,
+  is_superaccount        BOOLEAN     NOT NULL DEFAULT FALSE,
   is_global_evaluator BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
 
--- USER
+-- account
 -- instrument stores the band member's instrument.
 -- role_id references the role table.
 
-CREATE TABLE "user" (
-  user_id      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE account (
+  account_id      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name         TEXT        NOT NULL,
   email        TEXT        NOT NULL UNIQUE,
   role_id      UUID        NOT NULL REFERENCES role(role_id),
@@ -34,21 +34,21 @@ CREATE TABLE "user" (
 );
 
 
--- USER_CREDENTIAL
+-- account_CREDENTIAL
 -- Taken from claude, probably needs changed based on the system we integrate
 
-CREATE TABLE user_credential (
-  user_credential_id  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id             UUID        NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
-  provider            TEXT        NOT NULL DEFAULT 'google',
-  provider_id         TEXT        NOT NULL,
-  access_token        TEXT,
-  refresh_token       TEXT,
-  token_expires_at    TIMESTAMPTZ,
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (provider, provider_id)
-);
+-- CREATE TABLE account_credential (
+--   account_credential_id  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+--   account_id             UUID        NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
+--   provider            TEXT        NOT NULL DEFAULT 'google',
+--   provider_id         TEXT        NOT NULL,
+--   access_token        TEXT,
+--   refresh_token       TEXT,
+--   token_expires_at    TIMESTAMPTZ,
+--   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--   UNIQUE (provider, provider_id)
+-- );
 
 
 -- STATION
@@ -89,33 +89,33 @@ CREATE TABLE rubric (
 
 
 -- EVALUATOR
--- Controls which users can evaluate which stations.
+-- Controls which accounts can evaluate which stations.
 -- Inserting a row grants evaluator access to that station,
 -- either via auto-promotion or manual instructor override.
 
 CREATE TABLE evaluator (
   evaluator_id  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID        NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
+  account_id       UUID        NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
   station_id    UUID        NOT NULL REFERENCES station(station_id) ON DELETE CASCADE,
   assigned_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, station_id)
+  UNIQUE (account_id, station_id)
 );
 
 
 -- SCORE
 -- Every evaluation of a band member at a station.
--- Multiple scores per user per station are supported.
+-- Multiple scores per account per station are supported.
 -- status_id is the evaluator's grade pick from status.
 -- notes captures the evaluator's written feedback.
 
 CREATE TABLE score (
   score_id      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID        NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
-  evaluator_id  UUID        REFERENCES "user"(user_id) ON DELETE SET NULL,
+  account_id    UUID        NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
+  evaluator_id  UUID        REFERENCES evaluator(evaluator_id) ON DELETE SET NULL,
   station_id    UUID        NOT NULL REFERENCES station(station_id) ON DELETE CASCADE,
   status_id     UUID        NOT NULL REFERENCES status(status_id),
   notes         TEXT,
-  timestamp     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  evaluated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 
@@ -126,32 +126,18 @@ CREATE TABLE score (
 
 CREATE TABLE progress (
   progress_id  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      UUID        NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
+  account_id      UUID        NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
   station_id   UUID        NOT NULL REFERENCES station(station_id) ON DELETE CASCADE,
   score_id     UUID        REFERENCES score(score_id) ON DELETE SET NULL,
-  UNIQUE (user_id, station_id)
+  UNIQUE (account_id, station_id)
 );
-
-
--- INDEXES
-
-CREATE INDEX idx_user_role              ON "user" (role_id);
-CREATE INDEX idx_user_credential_user   ON user_credential (user_id);
-CREATE INDEX idx_rubric_station         ON rubric (station_id);
-CREATE INDEX idx_evaluator_user         ON evaluator (user_id);
-CREATE INDEX idx_evaluator_station      ON evaluator (station_id);
-CREATE INDEX idx_score_user             ON score (user_id);
-CREATE INDEX idx_score_evaluator        ON score (evaluator_id);
-CREATE INDEX idx_score_station          ON score (station_id);
-CREATE INDEX idx_progress_user          ON progress (user_id);
-CREATE INDEX idx_progress_station       ON progress (station_id);
 
 
 -- SEED DATA
 -- The station and the scoring standards used in HMB's 2023 season
 -- The roles are basic band positions with HMB specific permissions
 
-INSERT INTO role (name, description, is_superuser, is_global_evaluator) VALUES
+INSERT INTO role (name, description, is_superaccount, is_global_evaluator) VALUES
   ('band_member', 'Basic checklist access, can be evaluated',      FALSE, FALSE),
   ('evaluator',   'Can evaluate band members at assigned stations', FALSE, FALSE),
   ('instructor',  'Can view full rubric, gated by own VTC status',  FALSE, FALSE),
