@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
 import PermissionManager, { UserPermission } from "@client/stores/PermissionManager";
+import UserManager from '@client/stores/UserManager';
 import { useState } from "react";
 
 type Station = {

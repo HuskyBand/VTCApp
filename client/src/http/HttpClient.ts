@@ -48,16 +48,14 @@ export class HttpClient {
 	private buildRequestHeaders(url: string, body?: unknown, contentType?: string): Record<string, string> {
 		const headers: Record<string, string> = {};
 
-		if (!url.includes('://')) {
-			const authToken = this._tokenProvider?.();
-			if (authToken) {
-				headers.Authorization = authToken;
-			}
+		const authToken = this._tokenProvider?.();
+		if (authToken && !url.includes('://')) {
+			headers.Authorization = `Bearer ${authToken}`;
 		}
 
-        if (body) {
+        if (body && !url.includes('://')) {
             if (contentType) {
-			    headers['Content-Type'] = contentType;
+                headers['Content-Type'] = contentType;
             } else if (!(body instanceof FormData)) {
                 headers['Content-Type'] = 'application/json';
             }

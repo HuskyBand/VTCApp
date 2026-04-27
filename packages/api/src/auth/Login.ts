@@ -5,6 +5,15 @@ export type LoginPayload = {
     password: string
 }
 
+export type RegisterPayload = {
+    username: string,
+    password: string,
+    email: string,
+    firstName: string,
+    lastName: string,
+    instrument: string
+}
+
 export type LoginWithTokenPayload = {
     token: string
 }

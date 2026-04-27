@@ -7,6 +7,9 @@ import IndexPage from "./components/pages/IndexPage";
 import LogoutPage from "./components/pages/LogoutPage";
 import RegisterPage from "./components/pages/RegisterPage";
 import LoginPage from "./components/pages/LoginPage";
+import ProfileSetupPage from "./components/pages/ProfileSetupPage";
+import ProfileSettingsPage from "./components/pages/ProfileSettingsPage";
+import PermissionManagementPage from "./components/pages/PermissionManagementPage";
 import NotFoundPage from "./components/pages/NotFoundPage";
 import StationDetail from "./components/pages/StationDetail";
 import GetEvaluated from "./components/pages/GetEvaluated";
@@ -29,6 +32,13 @@ function App() {
 				<Route path="/logout" element={<LogoutPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/register" element={<RegisterPage />} />
+				<Route path="/profile-setup" element={<ProfileSetupPage />} />
+				<Route path="/profile" element={<ProfileSettingsPage />} />
+				<Route path="/permissions" element={
+					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<PermissionManagementPage />
+					</ProtectedRoute>
+				} />
 				<Route path="/station/:id" element={<StationDetail />} />
 				<Route path="/station/:id/get-evaluated" element={<GetEvaluated />} />
 				<Route path="/evaluate" element={

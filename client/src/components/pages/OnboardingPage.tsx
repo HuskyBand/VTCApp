@@ -1,16 +1,40 @@
 export default function OnboardingPage() {
     return (
-    <>
-        <section className="center-section">
-            <div id="vtc-hero">
-                <h1>VTC</h1>
-                <h2>Visual Training Circuit</h2>
-            </div>
-            <div className="content-direction-right content-spacing-small">
-                <a href="/register"><button className="sign-in-button">Sign Up</button></a>
-                <a href="/login"><button className="dark sign-in-button">Log In</button></a>
-            </div>
-        </section>
-    </>
+        <main className="center-section onboarding-screen">
+            <section id="vtc-hero">
+                <div className="hero-badge">
+                    <span className="eyebrow">🎵 Visual Training Circuit</span>
+                </div>
+                <h1>Keep every musician's evaluation progress in one place.</h1>
+                <p>
+                    Sign up or log in to manage stations, submit evaluations, and let your team stay aligned
+                    on progress and permissions. Track improvement, celebrate achievements, and grow together.
+                </p>
+                <div className="hero-actions">
+                    <a href="/register" className="button primary">
+                        <span className="button-icon">✨</span>
+                        Create account
+                    </a>
+                    <a href="/login" className="button secondary">
+                        <span className="button-icon">🔑</span>
+                        Log in
+                    </a>
+                </div>
+                <div className="hero-features">
+                    <div className="feature-item">
+                        <span className="feature-icon">📊</span>
+                        <span>Track Progress</span>
+                    </div>
+                    <div className="feature-item">
+                        <span className="feature-icon">👥</span>
+                        <span>Team Collaboration</span>
+                    </div>
+                    <div className="feature-item">
+                        <span className="feature-icon">🎯</span>
+                        <span>Goal Setting</span>
+                    </div>
+                </div>
+            </section>
+        </main>
     );
 }
