@@ -4,6 +4,31 @@ import type { User } from '@api/user/User';
 
 const sqlite = sqlite3.verbose();
 
+export type Station = {
+    id?: number;
+    name: string;
+    criteria: string[]; // JSON string or array
+    createdAt?: string;
+};
+
+export type Notification = {
+    id?: number;
+    title: string;
+    message: string;
+    senderId: number;
+    senderName: string;
+    recipientId?: number | null;
+    createdAt?: string;
+};
+
+export type QueueEntry = {
+    id?: number;
+    stationId: number;
+    userId: number;
+    requestedAt?: string;
+    status?: string;
+};
+
 export type Evaluation = {
     id?: number;
     userId: number;
@@ -11,6 +36,7 @@ export type Evaluation = {
     stationId: number;
     score?: number;
     comments?: string;
+    criteria?: string[];
     createdAt?: string;
 };
 
@@ -44,9 +70,52 @@ export class Database {
                 stationId INTEGER NOT NULL,
                 score INTEGER,
                 comments TEXT,
+                criteria TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (userId) REFERENCES users(id),
                 FOREIGN KEY (evaluatorId) REFERENCES users(id)
+            )
+        `);
+
+        this.db.get('PRAGMA table_info(evaluations)', [], (err, rows: any) => {
+            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
+                this.db.run('ALTER TABLE evaluations ADD COLUMN criteria TEXT');
+            }
+        });
+
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS stations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                criteria TEXT NOT NULL, -- JSON array of criteria
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                senderId INTEGER NOT NULL,
+                senderName TEXT NOT NULL,
+                recipientId INTEGER,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (senderId) REFERENCES users(id),
+                FOREIGN KEY (recipientId) REFERENCES users(id)
+            )
+        `);
+
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS station_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stationId INTEGER NOT NULL,
+                userId INTEGER NOT NULL,
+                requestedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL DEFAULT 'waiting',
+                FOREIGN KEY (stationId) REFERENCES stations(id),
+                FOREIGN KEY (userId) REFERENCES users(id),
+                UNIQUE (stationId, userId)
             )
         `);
     }
@@ -172,6 +241,7 @@ export class Database {
         stationId: number;
         score?: number;
         comments?: string;
+        criteria?: string[];
     }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
             const sql = `
@@ -186,7 +256,8 @@ export class Database {
                     evaluation.evaluatorId,
                     evaluation.stationId,
                     evaluation.score,
-                    evaluation.comments
+                    evaluation.comments,
+                    evaluation.criteria ? JSON.stringify(evaluation.criteria) : null
                 ],
                 function(err) {
                     if (err) {
@@ -203,7 +274,7 @@ export class Database {
     getEvaluationsForUser(userId: number): Promise<Evaluation[]> {
         return new Promise((resolve, reject) => {
             this.db.all(
-                'SELECT id, userId, evaluatorId, stationId, score, comments, createdAt FROM evaluations WHERE userId = ? ORDER BY createdAt DESC',
+                'SELECT id, userId, evaluatorId, stationId, score, comments, criteria, createdAt FROM evaluations WHERE userId = ? ORDER BY createdAt DESC',
                 [userId],
                 (err, rows) => {
                     if (err) {
@@ -211,7 +282,328 @@ export class Database {
                         return;
                     }
 
-                    resolve((rows as Evaluation[]) || []);
+                    resolve(((rows as any[]) || []).map((row) => ({
+                        ...row,
+                        criteria: row.criteria ? JSON.parse((row as any).criteria) : []
+                    })) as Evaluation[]);
+                }
+            );
+        });
+    }
+
+    getLatestEvaluationForUserStation(userId: number, stationId: number): Promise<Evaluation | null> {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT id, userId, evaluatorId, stationId, score, comments, criteria, createdAt FROM evaluations WHERE userId = ? AND stationId = ? ORDER BY createdAt DESC LIMIT 1',
+                [userId, stationId],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    if (!row) {
+                        resolve(null);
+                        return;
+                    }
+
+                    resolve({
+                        ...(row as Evaluation),
+                        criteria: (row as any).criteria ? JSON.parse((row as any).criteria) : []
+                    });
+                }
+            );
+        });
+    }
+
+    getAllEvaluations(): Promise<Evaluation[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                'SELECT id, userId, evaluatorId, stationId, score, comments, criteria, createdAt FROM evaluations ORDER BY createdAt DESC',
+                [],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve(((rows as any[]) || []).map((row) => ({
+                        ...row,
+                        criteria: row.criteria ? JSON.parse((row as any).criteria) : []
+                    })) as Evaluation[]);
+                }
+            );
+        });
+    }
+
+    createNotification(notification: { title: string; message: string; senderId: number; senderName: string; recipientId?: number | null }): Promise<{ id: number }> {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                INSERT INTO notifications (title, message, senderId, senderName, recipientId)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+
+            this.db.run(
+                sql,
+                [
+                    notification.title,
+                    notification.message,
+                    notification.senderId,
+                    notification.senderName,
+                    notification.recipientId ?? null
+                ],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve({ id: this.lastID });
+                }
+            );
+        });
+    }
+
+    getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+        return new Promise((resolve, reject) => {
+            const sql = isDirector
+                ? 'SELECT id, title, message, senderName, createdAt FROM notifications ORDER BY createdAt DESC'
+                : 'SELECT id, title, message, senderName, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY createdAt DESC';
+            const params = isDirector ? [] : [userId];
+
+            this.db.all(sql, params, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve((rows as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>) || []);
+            });
+        });
+    }
+
+    createQueueEntry(stationId: number, userId: number): Promise<QueueEntry> {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                INSERT INTO station_queue (stationId, userId)
+                VALUES (?, ?)
+            `;
+
+            this.db.run(sql, [stationId, userId], function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve({ id: this.lastID, stationId, userId, status: 'waiting' });
+            });
+        });
+    }
+
+    getQueueForStation(stationId: number): Promise<QueueEntry[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                'SELECT id, stationId, userId, requestedAt, status FROM station_queue WHERE stationId = ? ORDER BY requestedAt ASC',
+                [stationId],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve((rows as QueueEntry[]) || []);
+                }
+            );
+        });
+    }
+
+    getQueueEntry(stationId: number, userId: number): Promise<QueueEntry | null> {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT id, stationId, userId, requestedAt, status FROM station_queue WHERE stationId = ? AND userId = ?',
+                [stationId, userId],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve((row as QueueEntry) || null);
+                }
+            );
+        });
+    }
+
+    removeQueueEntry(stationId: number, userId: number): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.run(
+                'DELETE FROM station_queue WHERE stationId = ? AND userId = ?',
+                [stationId, userId],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve();
+                }
+            );
+        });
+    }
+
+    popQueueEntry(stationId: number): Promise<QueueEntry | null> {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT id, stationId, userId, requestedAt, status FROM station_queue WHERE stationId = ? ORDER BY requestedAt ASC LIMIT 1',
+                [stationId],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    if (!row) {
+                        resolve(null);
+                        return;
+                    }
+
+                    const entry = row as QueueEntry;
+                    this.db.run(
+                        'DELETE FROM station_queue WHERE id = ?',
+                        [entry.id],
+                        function(deleteErr) {
+                            if (deleteErr) {
+                                reject(deleteErr);
+                                return;
+                            }
+
+                            resolve(entry);
+                        }
+                    );
+                }
+            );
+        });
+    }
+
+    // Station methods
+    createStation(station: { name: string; criteria: string[] }): Promise<{ id: number }> {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                INSERT INTO stations (name, criteria)
+                VALUES (?, ?)
+            `;
+
+            this.db.run(
+                sql,
+                [
+                    station.name,
+                    JSON.stringify(station.criteria)
+                ],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve({ id: this.lastID });
+                }
+            );
+        });
+    }
+
+    getAllStations(): Promise<Station[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                'SELECT id, name, criteria, createdAt FROM stations ORDER BY id ASC',
+                [],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    const stations = (rows as any[]).map(row => ({
+                        ...row,
+                        criteria: JSON.parse(row.criteria)
+                    }));
+
+                    resolve(stations);
+                }
+            );
+        });
+    }
+
+    getStationById(id: number): Promise<Station | null> {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT id, name, criteria, createdAt FROM stations WHERE id = ?',
+                [id],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    if (!row) {
+                        resolve(null);
+                        return;
+                    }
+
+                    resolve({
+                        ...row as Station,
+                        criteria: JSON.parse((row as any).criteria)
+                    });
+                }
+            );
+        });
+    }
+
+    updateStation(id: number, updates: { name?: string; criteria?: string[] }): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const fields = [];
+            const values = [];
+
+            if (updates.name !== undefined) {
+                fields.push('name = ?');
+                values.push(updates.name);
+            }
+
+            if (updates.criteria !== undefined) {
+                fields.push('criteria = ?');
+                values.push(JSON.stringify(updates.criteria));
+            }
+
+            if (fields.length === 0) {
+                resolve();
+                return;
+            }
+
+            const sql = `UPDATE stations SET ${fields.join(', ')} WHERE id = ?`;
+            values.push(id);
+
+            this.db.run(sql, values, function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve();
+            });
+        });
+    }
+
+    deleteStation(id: number): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.run(
+                'DELETE FROM stations WHERE id = ?',
+                [id],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve();
                 }
             );
         });

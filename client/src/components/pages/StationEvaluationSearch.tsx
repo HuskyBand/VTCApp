@@ -15,7 +15,7 @@ export default function StationEvaluationSearch() {
         switch (status) {
             case 'Developing': return 'purple';
             case 'Satisfactory': return 'grey';
-            case 'Exemplary': return 'gold';
+            case 'Mastery': return 'gold';
             default: return 'grey';
         }
     };

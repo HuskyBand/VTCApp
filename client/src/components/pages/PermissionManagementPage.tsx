@@ -1,4 +1,5 @@
 import UserManager from '@client/stores/UserManager';
+import PermissionManager from '@client/stores/PermissionManager';
 import { PermFlags, type User } from '@api/user/User';
 import React from 'react';
 import { useNavigate } from 'react-router';
@@ -22,7 +23,7 @@ export default function PermissionManagementPage() {
     const [error, setError] = React.useState('');
 
     React.useEffect(() => {
-        if (!UserManager.isLoggedIn || !UserManager.isDirector) {
+        if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) {
             nav('/');
             return;
         }

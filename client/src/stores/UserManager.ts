@@ -1,5 +1,6 @@
 import { type LoginPayload, type LoginResponse, type RegisterPayload } from '@api/auth/Login.ts';
 import { PermFlags, type User } from '@api/user/User';
+import PermissionManager, { UserPermission } from '@client/stores/PermissionManager';
 import { Endpoints } from '@client/Endpoints';
 import http from '@client/http/HttpClient';
 
@@ -23,6 +24,28 @@ class UserManager {
         }
     }
 
+    private updatePermissionFromUser(user: User | null): void {
+        if (!user) {
+            PermissionManager.permission = UserPermission.BandMember;
+            return;
+        }
+
+        switch (user.permFlags & PermFlags.LevelMask) {
+            case PermFlags.IsDirector:
+                PermissionManager.permission = UserPermission.DrJahlas;
+                break;
+            case PermFlags.IsAssistant:
+                PermissionManager.permission = UserPermission.Evaluator;
+                break;
+            case PermFlags.IsLeadership:
+                PermissionManager.permission = UserPermission.Elevated;
+                break;
+            default:
+                PermissionManager.permission = UserPermission.BandMember;
+                break;
+        }
+    }
+
     private loadFromStorage(): void {
         let data = localStorage.getItem('user_data');
 
@@ -35,6 +58,7 @@ class UserManager {
             if (parsed) {
                 this._authToken = parsed._authToken;
                 this._user = parsed._user;
+                this.updatePermissionFromUser(this._user);
                 return;
             }
         }
@@ -99,6 +123,7 @@ class UserManager {
     setUser(authToken: string, user: User) {
         this._authToken = authToken;
         this._user = user;
+        this.updatePermissionFromUser(user);
         this.saveToStorage();
     }
 
@@ -143,12 +168,73 @@ class UserManager {
         return response.body;
     }
 
-    async submitEvaluation(userId: number, stationId: number, score?: number, comments?: string): Promise<boolean> {
+    async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+        const response = await http.get(Endpoints.notifications.list);
+        if (!response.ok || !response.body) {
+            return [];
+        }
+        return response.body as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>;
+    }
+
+    async createNotification(title: string, message: string): Promise<boolean> {
+        const response = await http.post(Endpoints.notifications.create, {
+            title,
+            message
+        });
+        return response.ok;
+    }
+
+    async getStationQueue(stationId: number): Promise<Array<{ id: number; stationId: number; userId: number; name: string; position: number; requestedAt: string; status: string }>> {
+        const response = await http.get(Endpoints.STATION_QUEUE(stationId));
+        if (!response.ok || !response.body) {
+            return [];
+        }
+        return response.body as Array<{ id: number; stationId: number; userId: number; name: string; position: number; requestedAt: string; status: string }>;
+    }
+
+    async joinStationQueue(stationId: number): Promise<{ success: boolean; message?: string }> {
+        const response = await http.post(Endpoints.STATION_QUEUE(stationId), {});
+        const body = response.body as any;
+        return {
+            success: response.ok,
+            message: body?.message ?? (response.ok ? 'Joined queue.' : response.statusText)
+        };
+    }
+
+    async leaveStationQueue(stationId: number): Promise<{ success: boolean; message?: string }> {
+        const response = await http.delete(Endpoints.STATION_QUEUE(stationId));
+        const body = response.body as any;
+        return {
+            success: response.ok,
+            message: body?.message ?? (response.ok ? 'Left queue.' : response.statusText)
+        };
+    }
+
+    async takeNextStationQueue(stationId: number): Promise<{ success: boolean; message?: string; removedEntry?: { id: number; stationId: number; userId: number; requestedAt: string; status: string } }> {
+        const response = await http.post(Endpoints.STATION_QUEUE_NEXT(stationId), {});
+        const body = response.body as any;
+        return {
+            success: response.ok,
+            message: body?.error ?? body?.message ?? (response.ok ? 'Pulled next student.' : response.statusText),
+            removedEntry: response.ok ? body?.removedEntry : undefined
+        };
+    }
+
+    async getOverview(): Promise<any> {
+        const response = await http.get(Endpoints.admin.overview);
+        if (!response.ok || !response.body) {
+            return null;
+        }
+        return response.body;
+    }
+
+    async submitEvaluation(userId: number, stationId: number, score?: number, comments?: string, criteria?: string[]): Promise<boolean> {
         const response = await http.post(Endpoints.evaluations.submit, {
             userId,
             stationId,
             score,
-            comments
+            comments,
+            criteria
         });
         return response.ok;
     }
@@ -163,6 +249,33 @@ class UserManager {
 
     async updateUserPermissions(userId: number, permFlags: number): Promise<boolean> {
         const response = await http.put(Endpoints.users.permissions(userId), { permFlags });
+        return response.ok;
+    }
+
+    // Station management
+    async getStations(): Promise<any[]> {
+        const response = await http.get('/stations');
+        if (!response.ok || !response.body) {
+            return [];
+        }
+        return response.body as any[];
+    }
+
+    async createStation(name: string, criteria: string[]): Promise<boolean> {
+        const response = await http.post('/stations', { name, criteria });
+        return response.ok;
+    }
+
+    async updateStation(id: number, name?: string, criteria?: string[]): Promise<boolean> {
+        const updates: any = {};
+        if (name !== undefined) updates.name = name;
+        if (criteria !== undefined) updates.criteria = criteria;
+        const response = await http.put(`/stations/${id}`, updates);
+        return response.ok;
+    }
+
+    async deleteStation(id: number): Promise<boolean> {
+        const response = await http.delete(`/stations/${id}`);
         return response.ok;
     }
 };

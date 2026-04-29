@@ -7,14 +7,21 @@ export default function StationDetail() {
     const { id } = useParams();
     const [evaluations, setEvaluations] = useState<any[]>([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
+    const [queueError, setQueueError] = useState('');
+    const [queueMessage, setQueueMessage] = useState('');
 
     useEffect(() => {
         loadEvaluations();
+        loadQueue();
     }, [id]);
 
     // Refresh evaluations periodically
     useEffect(() => {
-        const interval = setInterval(loadEvaluations, 5000); // Refresh every 5 seconds
+        const interval = setInterval(() => {
+            loadEvaluations();
+            loadQueue();
+        }, 5000); // Refresh every 5 seconds
         return () => clearInterval(interval);
     }, []);
 
@@ -23,6 +30,65 @@ export default function StationDetail() {
             const userEvaluations = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
             const stationEvaluations = userEvaluations.filter((evaluation: any) => evaluation.stationId === parseInt(id!));
             setEvaluations(stationEvaluations);
+        }
+    };
+
+    const loadQueue = async () => {
+        if (!id || !UserManager.isLoggedIn) {
+            return;
+        }
+
+        try {
+            const stationId = parseInt(id);
+            const queueItems = await UserManager.getStationQueue(stationId);
+            setQueue(queueItems);
+            setQueueError('');
+        } catch (err) {
+            setQueueError('Failed to load queue status.');
+        }
+    };
+
+    const isInQueue = () => queue.some((entry) => entry.userId === UserManager.currentUser.id);
+    const queuePosition = () => {
+        const entry = queue.find((entry) => entry.userId === UserManager.currentUser.id);
+        return entry?.position ?? null;
+    };
+
+    const joinQueue = async () => {
+        if (!id) return;
+        try {
+            const stationId = parseInt(id);
+            const result = await UserManager.joinStationQueue(stationId);
+            if (result.success) {
+                setQueueMessage(result.message ?? 'You have been added to the station queue.');
+                setQueueError('');
+                await loadQueue();
+            } else {
+                setQueueError(result.message ?? 'Could not join the queue.');
+                setQueueMessage('');
+            }
+        } catch (err) {
+            setQueueError(err instanceof Error ? err.message : 'Could not join the queue.');
+            setQueueMessage('');
+        }
+    };
+
+    const leaveQueue = async () => {
+        if (!id) return;
+        try {
+            const stationId = parseInt(id);
+            const result = await UserManager.leaveStationQueue(stationId);
+            if (result.success) {
+                setQueueMessage(result.message ?? 'You have been removed from the queue.');
+                setQueueError('');
+                await loadQueue();
+            } else {
+                setQueueError(result.message ?? 'Could not leave the queue.');
+                setQueueMessage('');
+            }
+        } catch (err) {
+            setQueueError(err instanceof Error ? err.message : 'Could not leave the queue.');
+            setQueueMessage('');
         }
     };
 
@@ -72,6 +138,36 @@ export default function StationDetail() {
                         </div>
                     </div>
 
+                    <div className="queue-panel">
+                        <h3>Evaluation Queue</h3>
+                        {queueError && <div className="error-message">{queueError}</div>}
+                        {queueMessage && <div className="success-message">{queueMessage}</div>}
+                        <div className="queue-status">
+                            {isInQueue() ? (
+                                <p>You are in the queue at position {queuePosition()}.</p>
+                            ) : (
+                                <p>You are not in the queue.</p>
+                            )}
+                        </div>
+                        <div className="queue-actions">
+                            {isInQueue() ? (
+                                <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
+                            ) : (
+                                <button className="button primary" onClick={joinQueue}>Join Queue</button>
+                            )}
+                        </div>
+                        {queue.length > 0 && (
+                            <div className="queue-list">
+                                <h4>Current queue</h4>
+                                <ol>
+                                    {queue.map((entry) => (
+                                        <li key={entry.id}>{entry.name} {entry.position === 1 ? '(next)' : ''}</li>
+                                    ))}
+                                </ol>
+                            </div>
+                        )}
+                    </div>
+
                     {!showHistory ? (
                         <div className="evaluated-view">
                             {evaluations.length > 0 ? (
@@ -88,11 +184,22 @@ export default function StationDetail() {
                                     </div>
                                     <div className="evaluation-item latest">
                                         <div className="evaluation-header">
-                                            <span className="evaluation-score">Score: {evaluations[0].score}%</span>
                                             <span className="evaluation-date">
                                                 {new Date(evaluations[0].createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
+                                        {evaluations[0].criteria && evaluations[0].criteria.length > 0 ? (
+                                            <div className="evaluation-criteria-list">
+                                                <h4>Criteria Results</h4>
+                                                <ul>
+                                                    {evaluations[0].criteria.map((status: string, index: number) => (
+                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <span className="evaluation-score">Score: {evaluations[0].score}%</span>
+                                        )}
                                         {evaluations[0].comments && (
                                             <div className="evaluation-comments">
                                                 {evaluations[0].comments}
@@ -129,11 +236,22 @@ export default function StationDetail() {
                                 {evaluations.map((evaluation) => (
                                     <div key={evaluation.id} className="evaluation-item">
                                         <div className="evaluation-header">
-                                            <span className="evaluation-score">Score: {evaluation.score}%</span>
                                             <span className="evaluation-date">
                                                 {new Date(evaluation.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
+                                        {evaluation.criteria && evaluation.criteria.length > 0 ? (
+                                            <div className="evaluation-criteria-list">
+                                                <h4>Criteria Results</h4>
+                                                <ul>
+                                                    {evaluation.criteria.map((status: string, index: number) => (
+                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <span className="evaluation-score">Score: {evaluation.score}%</span>
+                                        )}
                                         {evaluation.comments && (
                                             <div className="evaluation-comments">
                                                 {evaluation.comments}

@@ -12,7 +12,6 @@ import ProfileSettingsPage from "./components/pages/ProfileSettingsPage";
 import PermissionManagementPage from "./components/pages/PermissionManagementPage";
 import NotFoundPage from "./components/pages/NotFoundPage";
 import StationDetail from "./components/pages/StationDetail";
-import GetEvaluated from "./components/pages/GetEvaluated";
 import StationEvaluationBegin from "./components/pages/StationEvaluationBegin";
 import StationEvaluationStarred from "./components/pages/StationEvaluationStarred";
 import CriteriaDetail from "./components/pages/CriteriaDetail";
@@ -23,6 +22,8 @@ import EditVTC from "./components/pages/EditVTC";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EvaluateSelectStation from "./components/pages/EvaluateSelectStation";
 import EvaluationForm from "./components/pages/EvaluationForm";
+import StationManagement from "./components/pages/StationManagement";
+import DirectorOverview from "./components/pages/DirectorOverview";
 
 function App() {
   return (
@@ -40,17 +41,18 @@ function App() {
 					</ProtectedRoute>
 				} />
 				<Route path="/station/:id" element={<StationDetail />} />
-				<Route path="/station/:id/get-evaluated" element={<GetEvaluated />} />
-				<Route path="/evaluate" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canEvaluate()}>
-						<EvaluateSelectStation />
+				<Route path="/evaluate" element={<EvaluateSelectStation />} />
+				<Route path="/admin/overview" element={
+					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<DirectorOverview />
 					</ProtectedRoute>
 				} />
-				<Route path="/evaluate/station/:stationId" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canEvaluate()}>
-						<EvaluationForm />
+				<Route path="/admin/stations" element={
+					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<StationManagement />
 					</ProtectedRoute>
 				} />
+				<Route path="/evaluate/station/:stationId" element={<EvaluationForm />} />
 				<Route path="/station/:id/evaluate" element={<StationEvaluationBegin />} />
 				<Route path="/station/:id/starred" element={<StationEvaluationStarred />} />
 				<Route path="/criteria-detail" element={<CriteriaDetail />} />

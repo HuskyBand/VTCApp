@@ -1,4 +1,5 @@
 import { DEFAULT_BASE_API_URL, DEFAULT_API_VERSION } from '@api/Constants.ts';
+import PermissionManager, { UserPermission } from '@client/stores/PermissionManager';
 
 export interface HttpResponse<T = unknown> {
 	ok: boolean;
@@ -52,6 +53,11 @@ export class HttpClient {
 		if (authToken && !url.includes('://')) {
 			headers.Authorization = `Bearer ${authToken}`;
 		}
+
+        const overridePermission = PermissionManager.permission;
+        if (!url.includes('://') && overridePermission && overridePermission !== UserPermission.BandMember) {
+            headers['X-Test-Permission'] = overridePermission;
+        }
 
         if (body && !url.includes('://')) {
             if (contentType) {

@@ -15,13 +15,13 @@ export default function EvaluateAltExpanded() {
         ]
     };
 
-    const statuses = ['Developing', 'Satisfactory', 'Exemplary'];
+    const statuses = ['Developing', 'Satisfactory', 'Mastery'];
 
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Developing': return 'purple';
             case 'Satisfactory': return 'grey';
-            case 'Exemplary': return 'gold';
+            case 'Mastery': return 'gold';
             default: return '';
         }
     };

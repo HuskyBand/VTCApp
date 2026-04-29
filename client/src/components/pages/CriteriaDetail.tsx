@@ -10,7 +10,7 @@ export default function CriteriaDetail() {
         name: 'Criteria 1',
         developing: 'Developing explanation',
         satisfactory: 'Satisfactory explanation',
-        exemplary: 'Exemplary explanation'
+        mastery: 'Mastery explanation'
     };
 
     return (
@@ -27,8 +27,8 @@ export default function CriteriaDetail() {
                         <p>{criteria.satisfactory}</p>
                     </div>
                     <div className="status-block">
-                        <h3>Exemplary</h3>
-                        <p>{criteria.exemplary}</p>
+                        <h3>Mastery</h3>
+                        <p>{criteria.mastery}</p>
                     </div>
                 </div>
                 <div className="modal-buttons">

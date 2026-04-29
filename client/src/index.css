@@ -159,6 +159,10 @@ button {
   }
 }
 
+#center {
+  padding-bottom: 110px;
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -226,6 +230,11 @@ button {
   padding: 15px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+}
+
+.station-select-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .station-select-row.selected {
@@ -358,6 +367,16 @@ button {
   padding: 15px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+}
+
+.station-row.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.station-row.locked .station-name,
+.station-row.locked .station-status {
+  color: rgba(0, 0, 0, 0.55);
 }
 
 .status-indicator {

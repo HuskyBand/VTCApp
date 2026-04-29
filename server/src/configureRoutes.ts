@@ -76,6 +76,113 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
     };
 
+    const isMastery = (score?: number | null) => score !== undefined && score !== null && score >= 80;
+    const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
+
+    const isDirectorOverride = (overridePermission?: string) => overridePermission === 'dr_jahlas';
+    const isElevatedOverride = (overridePermission?: string) => overridePermission === 'evaluator' || overridePermission === 'elevated' || overridePermission === 'dr_jahlas';
+
+    const canSubmitEvaluation = async (currentUserId: number, stationId: number, overridePermission?: string): Promise<boolean> => {
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser) {
+            return false;
+        }
+
+        if (isDirectorOverride(overridePermission) || isElevatedOverride(overridePermission)) {
+            return true;
+        }
+
+        if (
+            currentUser.permFlags === PermFlags.IsDirector ||
+            currentUser.permFlags === PermFlags.IsAssistant ||
+            currentUser.permFlags === PermFlags.IsLeadership
+        ) {
+            return true;
+        }
+
+        const currentStation = await db.getLatestEvaluationForUserStation(currentUserId, stationId);
+        const nextStation = stationId >= 6 ? null : await db.getLatestEvaluationForUserStation(currentUserId, stationId + 1);
+        const currentStatus = currentStation?.score;
+        const currentMastery = isMastery(currentStatus);
+        const currentPassed = hasPassed(currentStatus);
+        const nextPassed = stationId >= 6 || hasPassed(nextStation?.score);
+
+        const canEvaluate = currentMastery && nextPassed;
+        const canTeach = (currentPassed || currentMastery) && nextPassed;
+
+        return canEvaluate || canTeach;
+    };
+
+    const notifyFirstInQueue = async (stationId: number, senderId: number, senderName: string) => {
+        const queue = await db.getQueueForStation(stationId);
+        if (!queue.length) {
+            return;
+        }
+
+        const first = queue[0];
+        await db.createNotification({
+            title: `You're first in line for Station ${stationId}`,
+            message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
+            senderId,
+            senderName,
+            recipientId: first.userId
+        });
+    };
+
+    const buildOverview = async () => {
+        const users = await db.getAllUsers();
+        const evaluations = await db.getAllEvaluations();
+
+        const latestByUserStation = new Map<string, { score?: number }>();
+        evaluations.forEach((evaluation) => {
+            const key = `${evaluation.userId}:${evaluation.stationId}`;
+            if (!latestByUserStation.has(key)) {
+                latestByUserStation.set(key, { score: evaluation.score });
+            }
+        });
+
+        const stations = [1, 2, 3, 4, 5, 6].map((stationId) => {
+            let mastery = 0;
+            let proficient = 0;
+            let developing = 0;
+            let notStarted = 0;
+
+            users.forEach((user) => {
+                const key = `${user.id}:${stationId}`;
+                const latest = latestByUserStation.get(key);
+                if (!latest || latest.score === null || latest.score === undefined) {
+                    notStarted += 1;
+                    return;
+                }
+                if (latest.score >= 80) {
+                    mastery += 1;
+                } else if (latest.score >= 50) {
+                    proficient += 1;
+                } else {
+                    developing += 1;
+                }
+            });
+
+            return {
+                stationId,
+                name: `Station ${stationId}`,
+                mastery,
+                proficient,
+                developing,
+                notStarted,
+                totalUsers: users.length
+            };
+        });
+
+        const notifications = await db.getNotificationsForUser(0, true);
+
+        return {
+            stations,
+            totalUsers: users.length,
+            totalNotifications: notifications.length
+        };
+    };
+
     routes.get('/auth/me', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const user = await db.getUserById(userId);
@@ -124,15 +231,76 @@ export default function configureRoutes(routes: Hono, db: Database) {
             stationId: number;
             score?: number;
             comments?: string;
+            criteria?: string[];
         };
+        const testPermission = c.req.header('X-Test-Permission');
+
+        const currentUser = await db.getUserById(evaluatorId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const targetLatest = await db.getLatestEvaluationForUserStation(body.userId, body.stationId);
+        if (targetLatest && targetLatest.score !== undefined && targetLatest.score !== null && targetLatest.score >= 80) {
+            return c.json({ error: 'Target has already reached mastery for this station.' }, 400);
+        }
+
+        const eligible = await canSubmitEvaluation(evaluatorId, body.stationId, testPermission ?? undefined);
+        if (!eligible) {
+            return c.json({ error: 'You do not have sufficient station progress to submit evaluations for this station yet.' }, 403);
+        }
+
         const evaluation = await db.createEvaluation({
             userId: body.userId,
             evaluatorId,
             stationId: body.stationId,
             score: body.score,
-            comments: body.comments
+            comments: body.comments,
+            criteria: body.criteria ?? []
         });
         return c.json(evaluation);
+    });
+
+    routes.get('/notifications', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector || isDirectorOverride(testPermission ?? undefined));
+        return c.json(notifications);
+    });
+
+    routes.post('/notifications', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const body = await c.req.json() as { title: string; message: string };
+        const notification = await db.createNotification({
+            title: body.title,
+            message: body.message,
+            senderId: currentUserId,
+            senderName: `${currentUser.firstName} ${currentUser.lastName}`
+        });
+        return c.json(notification);
+    });
+
+    routes.get('/admin/overview', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const overview = await buildOverview();
+        return c.json(overview);
     });
 
     routes.get('/evaluations/:userId', authMiddleware, async (c) => {
@@ -144,6 +312,183 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
         const evaluations = await db.getEvaluationsForUser(targetUserId);
         return c.json(evaluations);
+    });
+
+    // Station management routes (director only)
+    routes.get('/stations', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const stations = await db.getAllStations();
+        return c.json(stations);
+    });
+
+    routes.get('/stations/:id/queue', authMiddleware, async (c) => {
+        const stationId = parseInt(c.req.param('id'));
+        const queue = await db.getQueueForStation(stationId);
+
+        const detailed = await Promise.all(queue.map(async (entry, index) => {
+            const user = await db.getUserById(entry.userId);
+            return {
+                id: entry.id,
+                stationId: entry.stationId,
+                userId: entry.userId,
+                name: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+                position: index + 1,
+                requestedAt: entry.requestedAt,
+                status: entry.status
+            };
+        }));
+
+        return c.json(detailed);
+    });
+
+    routes.post('/stations/:id/queue', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const stationId = parseInt(c.req.param('id'));
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const existing = await db.getQueueEntry(stationId, currentUserId);
+        if (existing) {
+            return c.json({ success: true, message: 'Already in queue.' });
+        }
+
+        try {
+            await db.createQueueEntry(stationId, currentUserId);
+        } catch (error) {
+            if ((error as any)?.message?.includes('UNIQUE')) {
+                return c.json({ success: true, message: 'Already in queue.' });
+            }
+            console.error('Queue creation failed:', error);
+            return c.json({ error: 'Unable to join the queue.' }, 500);
+        }
+
+        const queue = await db.getQueueForStation(stationId);
+        if (queue.length > 0 && queue[0].userId === currentUserId) {
+            try {
+                await db.createNotification({
+                    title: `You're first in line for Station ${stationId}`,
+                    message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
+                    senderId: currentUserId,
+                    senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+                    recipientId: currentUserId
+                });
+            } catch (notificationError) {
+                console.error('Queue notification failed after join:', notificationError);
+            }
+        }
+
+        return c.json({ success: true, message: 'You have joined the queue.' });
+    });
+
+    routes.delete('/stations/:id/queue', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const stationId = parseInt(c.req.param('id'));
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        await db.removeQueueEntry(stationId, currentUserId);
+        const queue = await db.getQueueForStation(stationId);
+        if (queue.length > 0) {
+            try {
+                await notifyFirstInQueue(stationId, currentUserId, `${currentUser.firstName} ${currentUser.lastName}`);
+            } catch (notificationError) {
+                console.error('Queue notification failed after leave:', notificationError);
+            }
+        }
+
+        return c.json({ success: true });
+    });
+
+    routes.post('/stations/:id/queue/next', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const stationId = parseInt(c.req.param('id'));
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const eligible = await canSubmitEvaluation(currentUserId, stationId, c.req.header('X-Test-Permission') ?? undefined);
+        if (!eligible) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const removedEntry = await db.popQueueEntry(stationId);
+        if (!removedEntry) {
+            return c.json({ error: 'Queue is empty.' }, 404);
+        }
+
+        try {
+            await db.createNotification({
+                title: `Station ${stationId} evaluation started`,
+                message: `You are now being evaluated for Station ${stationId}. Please meet the evaluator.`,
+                senderId: currentUserId,
+                senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+                recipientId: removedEntry.userId
+            });
+        } catch (notificationError) {
+            console.error('Queue notification failed after pull:', notificationError);
+        }
+
+        const queue = await db.getQueueForStation(stationId);
+        if (queue.length > 0) {
+            try {
+                await notifyFirstInQueue(stationId, currentUserId, `${currentUser.firstName} ${currentUser.lastName}`);
+            } catch (notificationError) {
+                console.error('Queue notification failed after pull for next student:', notificationError);
+            }
+        }
+
+        return c.json({ success: true, message: 'The next student has been pulled from the queue.', removedEntry });
+    });
+
+    routes.post('/stations', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const body = await c.req.json() as { name: string; criteria: string[] };
+        const station = await db.createStation(body);
+        return c.json(station);
+    });
+
+    routes.put('/stations/:id', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const stationId = parseInt(c.req.param('id'));
+        const updates = await c.req.json() as { name?: string; criteria?: string[] };
+        await db.updateStation(stationId, updates);
+        return c.json({ success: true });
+    });
+
+    routes.delete('/stations/:id', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const stationId = parseInt(c.req.param('id'));
+        await db.deleteStation(stationId);
+        return c.json({ success: true });
     });
 
     routes.post('/auth/logout', (c) => {
