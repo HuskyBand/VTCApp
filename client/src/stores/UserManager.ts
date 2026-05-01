@@ -261,6 +261,14 @@ class UserManager {
         return response.body as any[];
     }
 
+    async getStationById(id: number): Promise<any | null> {
+        const response = await http.get(`/stations/${id}`);
+        if (!response.ok || !response.body) {
+            return null;
+        }
+        return response.body as any;
+    }
+
     async createStation(name: string, criteria: string[]): Promise<boolean> {
         const response = await http.post('/stations', { name, criteria });
         return response.ok;

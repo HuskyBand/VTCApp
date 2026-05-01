@@ -1,66 +1,109 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BottomNav from "../BottomNav";
+import UserManager from "@client/stores/UserManager";
 
-type CriteriaItem = {
-    id: number;
+type LevelDescription = {
     label: string;
-    status: 'developing' | 'satisfactory' | 'mastery';
+    description: string;
 };
 
 type Criterion = {
     id: number;
     name: string;
-    items: CriteriaItem[];
+    levels: LevelDescription[];
 };
 
+type StationOption = {
+    id: number;
+    name: string;
+};
+
+const defaultLevels: LevelDescription[] = [
+    { label: 'Not Yet', description: '' },
+    { label: 'In Progress', description: '' },
+    { label: 'Satisfactory', description: '' },
+    { label: 'Exceeding Standard', description: '' }
+];
+
 export default function EditVTC() {
-    const [mainPoints, setMainPoints] = useState(['Point 1', 'Point 2']);
-    const [criteria, setCriteria] = useState<Criterion[]>([
-        {
-            id: 1,
-            name: 'Criteria 1',
-            items: [
-                { id: 1, label: 'Not yet', status: 'developing' },
-                { id: 2, label: 'In progress', status: 'developing' },
-                { id: 3, label: 'Satisfactory', status: 'satisfactory' },
-                { id: 4, label: 'Exceeding Standard', status: 'mastery' }
-            ]
-        },
-        {
-            id: 2,
-            name: 'Criteria 2',
-            items: [
-                { id: 5, label: 'Not yet', status: 'developing' },
-                { id: 6, label: 'In progress', status: 'developing' },
-                { id: 7, label: 'Satisfactory', status: 'satisfactory' },
-                { id: 8, label: 'Exceeding Standard', status: 'mastery' }
-            ]
-        },
-    ]);
-    const [freeName, setFreeName] = useState('');
+    const [stations, setStations] = useState<StationOption[]>([]);
+    const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
+    const [criteria, setCriteria] = useState<Criterion[]>([]);
+    const [message, setMessage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const handleEditPoint = (idx: number, value: string) => {
-        const newPoints = [...mainPoints];
-        newPoints[idx] = value;
-        setMainPoints(newPoints);
+    const loadStations = async () => {
+        const stationList = await UserManager.getStations();
+        setStations(stationList.map((station) => ({ id: station.id, name: station.name })));
+        if (stationList.length > 0) {
+            setSelectedStationId(stationList[0].id);
+        }
     };
 
-    const handleEditCriteria = (critIdx: number, value: string) => {
-        const newCriteria = [...criteria];
-        newCriteria[critIdx].name = value;
-        setCriteria(newCriteria);
+    const loadStationCriteria = async (stationId: number) => {
+        const station = await UserManager.getStationById(stationId);
+        if (!station) {
+            setCriteria([]);
+            return;
+        }
+
+        const loadedCriteria = Array.isArray(station.criteria) ? station.criteria : [];
+        setCriteria(
+            loadedCriteria.map((name: string, index: number) => ({
+                id: index + 1,
+                name,
+                levels: defaultLevels.map((level) => ({ ...level }))
+            }))
+        );
     };
 
-    const handleEditItem = (critIdx: number, itemIdx: number, value: string) => {
-        const newCriteria = [...criteria];
-        newCriteria[critIdx].items[itemIdx].label = value;
-        setCriteria(newCriteria);
+    useEffect(() => {
+        const bootstrap = async () => {
+            await loadStations();
+            setLoading(false);
+        };
+        bootstrap();
+    }, []);
+
+    useEffect(() => {
+        if (selectedStationId !== null) {
+            loadStationCriteria(selectedStationId);
+        }
+    }, [selectedStationId]);
+
+    const handleStationChange = (stationId: number) => {
+        setSelectedStationId(stationId);
+        setMessage(null);
     };
 
-    const handleEditItemStatus = (critIdx: number, itemIdx: number, status: 'developing' | 'satisfactory' | 'mastery') => {
-        const newCriteria = [...criteria];
-        newCriteria[critIdx].items[itemIdx].status = status;
-        setCriteria(newCriteria);
+    const handleCriterionNameChange = (critIdx: number, value: string) => {
+        setCriteria((current) => {
+            const next = [...current];
+            next[critIdx] = { ...next[critIdx], name: value };
+            return next;
+        });
+    };
+
+    const handleLevelDescriptionChange = (critIdx: number, levelIdx: number, value: string) => {
+        setCriteria((current) => {
+            const next = [...current];
+            const criterion = { ...next[critIdx] };
+            const levels = [...criterion.levels];
+            levels[levelIdx] = { ...levels[levelIdx], description: value };
+            criterion.levels = levels;
+            next[critIdx] = criterion;
+            return next;
+        });
+    };
+
+    const handleSave = async () => {
+        if (selectedStationId === null) {
+            return;
+        }
+
+        const updatedNames = criteria.map((criterion) => criterion.name);
+        const ok = await UserManager.updateStation(selectedStationId, undefined, updatedNames);
+        setMessage(ok ? 'Criteria saved successfully.' : 'Unable to save criteria.');
     };
 
     return (
@@ -68,69 +111,52 @@ export default function EditVTC() {
             <section id="center">
                 <div>
                     <h1>Edit VTC</h1>
-                    <div className="rubric-edits">
-                        <h3>Rubric Edits</h3>
-                        <div className="main-points-edit">
-                            <h4>Station Main Points</h4>
-                            {mainPoints.map((point, idx) => (
-                                <input
-                                    key={idx}
-                                    type="text"
-                                    value={point}
-                                    onChange={(e) => handleEditPoint(idx, e.target.value)}
-                                    className="edit-input"
-                                />
+                    <div className="station-selector">
+                        <label htmlFor="station-select">Station</label>
+                        <select
+                            id="station-select"
+                            value={selectedStationId ?? ''}
+                            onChange={(e) => handleStationChange(Number(e.target.value))}
+                        >
+                            {stations.map((station) => (
+                                <option key={station.id} value={station.id}>{station.name}</option>
                             ))}
-                        </div>
-                        <div className="criteria-edits">
-                            {criteria.map((crit, critIdx) => (
-                                <div key={crit.id} className="criteria-edit">
-                                    <input
-                                        type="text"
-                                        value={crit.name}
-                                        onChange={(e) => handleEditCriteria(critIdx, e.target.value)}
-                                        className="edit-input criteria-name-input"
-                                        placeholder="Criteria name"
-                                    />
-                                    <div className="items-list">
-                                        {crit.items.map((item, itemIdx) => (
-                                            <div key={item.id} className="item-row">
-                                                <input
-                                                    type="text"
-                                                    value={item.label}
-                                                    onChange={(e) => handleEditItem(critIdx, itemIdx, e.target.value)}
-                                                    className="edit-input item-label-input"
-                                                    placeholder="Item description"
-                                                />
-                                                <select
-                                                    value={item.status}
-                                                    onChange={(e) => handleEditItemStatus(critIdx, itemIdx, e.target.value as 'developing' | 'satisfactory' | 'mastery')}
-                                                    className="status-select"
-                                                >
-                                                    <option value="developing">Developing</option>
-                                                    <option value="satisfactory">Satisfactory</option>
-                                                    <option value="mastery">Mastery</option>
-                                                </select>
-                                            </div>
-                                        ))}
+                        </select>
+                    </div>
+                    {loading ? (
+                        <p>Loading station criteria...</p>
+                    ) : (
+                        <>
+                            <div className="criteria-edits">
+                                {criteria.map((crit, critIdx) => (
+                                    <div key={crit.id} className="criteria-edit">
+                                        <input
+                                            type="text"
+                                            value={crit.name}
+                                            onChange={(e) => handleCriterionNameChange(critIdx, e.target.value)}
+                                            className="edit-input criteria-name-input"
+                                            placeholder="Criterion name"
+                                        />
+                                        <div className="level-grid">
+                                            {crit.levels.map((level, levelIdx) => (
+                                                <div key={level.label} className="level-edit">
+                                                    <label>{level.label}</label>
+                                                    <textarea
+                                                        value={level.description}
+                                                        onChange={(e) => handleLevelDescriptionChange(critIdx, levelIdx, e.target.value)}
+                                                        placeholder="Describe what this level means"
+                                                        className="edit-textarea"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="check-section">
-                        <h3>Check Bold Marker Status</h3>
-                        <p>Status: OK</p>
-                    </div>
-                    <div className="free-name">
-                        <label>Free Name:</label>
-                        <input
-                            type="text"
-                            value={freeName}
-                            onChange={(e) => setFreeName(e.target.value)}
-                            className="edit-input"
-                        />
-                    </div>
+                                ))}
+                            </div>
+                            <button className="btn submit-btn" onClick={handleSave}>Save Changes</button>
+                            {message && <p className="action-message">{message}</p>}
+                        </>
+                    )}
                 </div>
             </section>
             <BottomNav />

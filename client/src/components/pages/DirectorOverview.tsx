@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
 import PermissionManager from '@client/stores/PermissionManager';
-import { hasPassedStation, type EvaluationRecord } from '@client/utils/evaluationHelpers';
-import { type User } from '@api/user/User';
 
 type StationSummary = {
     stationId: number;
@@ -16,10 +14,25 @@ type StationSummary = {
     totalUsers: number;
 };
 
+type UnlockSummary = {
+    stationId: number;
+    label: string;
+    count: number;
+};
+
+type StationCapability = {
+    stationId: number;
+    name: string;
+    canEvaluate: number;
+    canTeach: number;
+};
+
 type OverviewData = {
     stations: StationSummary[];
     totalUsers: number;
     totalNotifications: number;
+    highestUnlockedCounts: UnlockSummary[];
+    capabilityByStation: StationCapability[];
 };
 
 type NotificationItem = {
@@ -30,24 +43,15 @@ type NotificationItem = {
     createdAt: string;
 };
 
-type UserProgress = {
-    userId: number;
-    firstName: string;
-    lastName: string;
-    instrument: string;
-    highestUnlockedStation: number;
-    evaluations: EvaluationRecord[];
-};
-
 export default function DirectorOverview() {
     const nav = useNavigate();
     const [overview, setOverview] = useState<OverviewData | null>(null);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-    const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [loadingOverview, setLoadingOverview] = useState(true);
 
     useEffect(() => {
         if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) {
@@ -57,15 +61,22 @@ export default function DirectorOverview() {
 
         loadOverview();
         loadNotifications();
-        loadUserProgress();
     }, []);
 
     const loadOverview = async () => {
+        setLoadingOverview(true);
+        setError('');
         try {
             const data = await UserManager.getOverview();
+            if (!data) {
+                setError('Failed to load overview data.');
+                return;
+            }
             setOverview(data);
         } catch (err) {
             setError('Failed to load overview data.');
+        } finally {
+            setLoadingOverview(false);
         }
     };
 
@@ -75,35 +86,6 @@ export default function DirectorOverview() {
             setNotifications(items);
         } catch (err) {
             setError('Failed to load notifications.');
-        }
-    };
-
-    const loadUserProgress = async () => {
-        try {
-            const users = await UserManager.getAllUsers();
-            const progressPromises = users.filter(user => user.id).map(async (user: User) => {
-                const evaluations = await UserManager.getEvaluationsForUser(user.id!);
-                let highestUnlocked = 1;
-                for (let stationId = 1; stationId <= 6; stationId++) {
-                    if (stationId === 1 || hasPassedStation(evaluations as EvaluationRecord[], stationId - 1)) {
-                        highestUnlocked = stationId;
-                    } else {
-                        break;
-                    }
-                }
-                return {
-                    userId: user.id!,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    instrument: user.instrument,
-                    highestUnlockedStation: highestUnlocked,
-                    evaluations: evaluations as EvaluationRecord[]
-                };
-            });
-            const progress = await Promise.all(progressPromises);
-            setUserProgress(progress);
-        } catch (err) {
-            setError('Failed to load user progress.');
         }
     };
 
@@ -121,7 +103,6 @@ export default function DirectorOverview() {
             setError('');
             await loadNotifications();
             await loadOverview();
-            await loadUserProgress();
         } catch (err) {
             setError('Failed to send notification.');
             setSuccess('');
@@ -138,51 +119,64 @@ export default function DirectorOverview() {
                     {success && <div className="message success-message">{success}</div>}
 
                     {overview ? (
-                        <div className="overview-summary">
-                            <div className="summary-panel">
-                                <h2>All Users</h2>
-                                <p>{overview.totalUsers} users registered</p>
-                                <p>{overview.totalNotifications} recent broadcasts</p>
+                        <>
+                            <div className="overview-summary">
+                                <div className="summary-panel">
+                                    <h2>All Users</h2>
+                                    <p>{overview.totalUsers} users registered</p>
+                                    <p>{overview.totalNotifications} recent broadcasts</p>
+                                </div>
+                                <div className="stations-summary">
+                                    {overview.stations.map((station) => (
+                                        <div key={station.stationId} className="station-summary-card">
+                                            <h3>{station.name}</h3>
+                                            <ul>
+                                                <li>Mastery: {station.mastery}</li>
+                                                <li>Proficient: {station.proficient}</li>
+                                                <li>Developing: {station.developing}</li>
+                                                <li>No progress: {station.notStarted}</li>
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="stations-summary">
-                                {overview.stations.map((station) => (
-                                    <div key={station.stationId} className="station-summary-card">
-                                        <h3>{station.name}</h3>
-                                        <ul>
-                                            <li>Mastery: {station.mastery}</li>
-                                            <li>Proficient: {station.proficient}</li>
-                                            <li>Developing: {station.developing}</li>
-                                            <li>No progress: {station.notStarted}</li>
-                                        </ul>
-                                    </div>
-                                ))}
+
+                            <div className="unlock-summary">
+                                <h2>Highest Station Unlocked</h2>
+                                <div className="unlock-grid">
+                                    {overview.highestUnlockedCounts.map((item) => (
+                                        <div key={item.stationId} className="unlock-card">
+                                            <strong>{item.label}</strong>
+                                            <span>{item.count} people</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ) : (
+
+                            <div className="capability-summary">
+                                <h2>Station Teaching / Evaluation Capacity</h2>
+                                <div className="capability-grid">
+                                    {overview.capabilityByStation.map((station) => (
+                                        <div key={station.stationId} className="capability-card">
+                                            <h3>{station.name}</h3>
+                                            <ul>
+                                                <li>Can evaluate: {station.canEvaluate}</li>
+                                                <li>Can teach: {station.canTeach}</li>
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    ) : loadingOverview ? (
                         <p>Loading overview...</p>
+                    ) : (
+                        <p>Unable to load overview. Please refresh.</p>
                     )}
 
-                    <div className="user-progress">
-                        <h2>User Progress</h2>
-                        {userProgress.length ? (
-                            <div className="user-progress-list">
-                                {userProgress.map((user) => (
-                                    <div key={user.userId} className="user-progress-card">
-                                        <div className="user-info">
-                                            <strong>{user.firstName} {user.lastName}</strong>
-                                            <span>{user.instrument}</span>
-                                        </div>
-                                        <div className="progress-info">
-                                            <span>Highest Unlocked Station: {user.highestUnlockedStation}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p>Loading user progress...</p>
-                        )}
+                    <div className="admin-actions">
+                        <button className="button secondary" onClick={() => nav('/admin/stations')}>Manage Stations</button>
                     </div>
-
                     <div className="notification-panel">
                         <h2>Broadcast Notification</h2>
                         <div className="form-group">
@@ -237,38 +231,41 @@ export default function DirectorOverview() {
                     margin-bottom: 1rem;
                 }
 
-                .user-progress-list {
-                    display: flex;
-                    flex-direction: column;
+                .unlock-summary,
+                .capability-summary {
+                    margin-top: 2rem;
+                }
+
+                .unlock-grid,
+                .capability-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
                     gap: 1rem;
                 }
 
-                .user-progress-card {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                .unlock-card,
+                .capability-card,
+                .station-summary-card {
                     padding: 1rem;
                     border: 1px solid #ddd;
                     border-radius: 8px;
                     background-color: #f9f9f9;
                 }
 
-                .user-info {
-                    display: flex;
-                    flex-direction: column;
+                .unlock-card strong,
+                .capability-card h3 {
+                    display: block;
+                    margin-bottom: 0.5rem;
                 }
 
-                .user-info strong {
-                    font-size: 1.1rem;
+                .capability-card ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
                 }
 
-                .user-info span {
-                    color: #666;
-                    font-size: 0.9rem;
-                }
-
-                .progress-info {
-                    text-align: right;
+                .capability-card li {
+                    margin-bottom: 0.35rem;
                 }
             `}</style>
         </>
