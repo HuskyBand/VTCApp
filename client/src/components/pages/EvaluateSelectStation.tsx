@@ -173,6 +173,12 @@ export default function EvaluateSelectStation() {
 
     const handleEvaluateScanned = () => {
         if (!scannedUser || !selectedStation) return;
+        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, selectedStation);
+        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, selectedStation);
+        if (!canEvaluate && !canTeach) {
+            setScanError('You are not eligible to evaluate this station. Reach mastery and pass the next station first.');
+            return;
+        }
         nav(`/evaluate/station/${selectedStation}?studentId=${scannedUser.id}`);
     };
 
@@ -209,59 +215,57 @@ export default function EvaluateSelectStation() {
                     </div>
 
                     {selectedStation && (
-                        <div className="queue-panel">
-                            <h3>Queue for Station {selectedStation}</h3>
-                            {queueError && <div className="error-message">{queueError}</div>}
-                            {queueMessage && <div className="success-message">{queueMessage}</div>}
-                            <p>{queue.length ? `${queue.length} student(s) waiting.` : 'No one is waiting in the queue yet.'}</p>
-                            {queue.length > 0 && (
-                                <ol>
-                                    {queue.map((entry) => (
-                                        <li key={entry.id}>{entry.position}. {entry.name} {entry.position === 1 ? '(next)' : ''}</li>
-                                    ))}
-                                </ol>
-                            )}
-                            <button
-                                className="btn submit-btn"
-                                onClick={handleTakeNext}
-                                disabled={!queue.length}
-                            >
-                                Pull Next Student
-                            </button>
-                        </div>
-                    )}
-
-                    {/* QR Scanner */}
-                    <div className="qr-scan-panel">
-                        <h3>Scan Student QR Code</h3>
-                        <p>Scan a student's QR code to instantly load their evaluation form.</p>
-                        {scanError && <div className="error-message">{scanError}</div>}
-                        {scannedUser && (
-                            <div className="scanned-student">
-                                <strong>Scanned:</strong> {scannedUser.name}
-                                {selectedStation ? (
-                                    <button className="button primary" onClick={handleEvaluateScanned} style={{ marginLeft: '1rem' }}>
-                                        Evaluate Now
-                                    </button>
-                                ) : (
-                                    <span style={{ marginLeft: '0.5rem', color: '#888' }}>(select a station above first)</span>
+                        <>
+                            <div className="queue-panel">
+                                <h3>Queue for Station {selectedStation}</h3>
+                                {queueError && <div className="error-message">{queueError}</div>}
+                                {queueMessage && <div className="success-message">{queueMessage}</div>}
+                                <p>{queue.length ? `${queue.length} student(s) waiting.` : 'No one is waiting in the queue yet.'}</p>
+                                {queue.length > 0 && (
+                                    <ol>
+                                        {queue.map((entry) => (
+                                            <li key={entry.id}>{entry.position}. {entry.name} {entry.position === 1 ? '(next)' : ''}</li>
+                                        ))}
+                                    </ol>
                                 )}
-                            </div>
-                        )}
-                        {!scannerOpen ? (
-                            <button className="button secondary" onClick={startScanner}>
-                                📷 Open QR Scanner
-                            </button>
-                        ) : (
-                            <div className="scanner-container">
-                                <video ref={videoRef} className="scanner-video" playsInline muted />
-                                <canvas ref={canvasRef} style={{ display: 'none' }} />
-                                <button className="button secondary" onClick={() => { stopScanner(); setScannerOpen(false); }}>
-                                    Close Scanner
+                                <button
+                                    className="btn submit-btn"
+                                    onClick={handleTakeNext}
+                                    disabled={!queue.length}
+                                >
+                                    Pull Next Student
                                 </button>
                             </div>
-                        )}
-                    </div>
+
+                            {/* QR Scanner — only shown after a station is selected */}
+                            <div className="qr-scan-panel">
+                                <h3>Scan Student QR Code</h3>
+                                <p>Scan a student's QR code to evaluate them for Station {selectedStation}.</p>
+                                {scanError && <div className="error-message">{scanError}</div>}
+                                {scannedUser && (
+                                    <div className="scanned-student">
+                                        <strong>Scanned:</strong> {scannedUser.name}
+                                        <button className="button primary" onClick={handleEvaluateScanned} style={{ marginLeft: '1rem' }}>
+                                            Evaluate Now
+                                        </button>
+                                    </div>
+                                )}
+                                {!scannerOpen ? (
+                                    <button className="button secondary" onClick={startScanner}>
+                                        📷 Open QR Scanner
+                                    </button>
+                                ) : (
+                                    <div className="scanner-container">
+                                        <video ref={videoRef} className="scanner-video" playsInline muted />
+                                        <canvas ref={canvasRef} style={{ display: 'none' }} />
+                                        <button className="button secondary" onClick={() => { stopScanner(); setScannerOpen(false); }}>
+                                            Close Scanner
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     <button
                         className="btn submit-btn"
