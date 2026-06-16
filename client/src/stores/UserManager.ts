@@ -228,9 +228,15 @@ class UserManager {
         return response.body;
     }
 
-    async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[] } | null> {
-        const response = await http.get<{ id: number; name: string; criteria: string[] }>(`/stations/${stationId}`);
+    async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[]; feedbackItems: string[] } | null> {
+        const response = await http.get<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>(`/stations/${stationId}`);
         if (!response.ok || !response.body) return null;
+        return response.body;
+    }
+
+    async getStationsFeedback(): Promise<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>> {
+        const response = await http.get<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>>('/stations/feedback');
+        if (!response.ok || !response.body) return [];
         return response.body;
     }
 
@@ -277,15 +283,16 @@ class UserManager {
         return response.body as any[];
     }
 
-    async createStation(name: string, criteria: string[]): Promise<boolean> {
-        const response = await http.post('/stations', { name, criteria });
+    async createStation(name: string, criteria: string[], feedbackItems?: string[]): Promise<boolean> {
+        const response = await http.post('/stations', { name, criteria, feedbackItems: feedbackItems ?? [] });
         return response.ok;
     }
 
-    async updateStation(id: number, name?: string, criteria?: string[]): Promise<boolean> {
+    async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[]): Promise<boolean> {
         const updates: any = {};
         if (name !== undefined) updates.name = name;
         if (criteria !== undefined) updates.criteria = criteria;
+        if (feedbackItems !== undefined) updates.feedbackItems = feedbackItems;
         const response = await http.put(`/stations/${id}`, updates);
         return response.ok;
     }

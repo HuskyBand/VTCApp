@@ -20,17 +20,10 @@ type Criterion = {
     level: CriterionLevel;
 };
 
-const COMMON_FEEDBACK: string[] = [
-    'Tone quality',
-    'Rhythm accuracy',
-    'Articulation',
-    'Dynamics',
-    'Intonation',
-    'Posture / instrument technique',
-    'Memorization',
-    'Sight reading',
-    'Tempo consistency',
-    'Note accuracy',
+const DEFAULT_FEEDBACK: string[] = [
+    'Tone quality', 'Rhythm accuracy', 'Articulation', 'Dynamics',
+    'Intonation', 'Posture / instrument technique', 'Memorization',
+    'Sight reading', 'Tempo consistency', 'Note accuracy',
 ];
 
 const levelScore: Record<CriterionLevel, number> = {
@@ -44,6 +37,7 @@ export default function EvaluationForm() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
+    const [feedbackOptions, setFeedbackOptions] = useState<string[]>(DEFAULT_FEEDBACK);
     const [stationName, setStationName] = useState(`Station ${stationId}`);
     const [feedbackChecked, setFeedbackChecked] = useState<Set<string>>(new Set());
     const [comments, setComments] = useState('');
@@ -72,11 +66,8 @@ export default function EvaluationForm() {
         const station = await UserManager.getStation(Number(stationId));
         if (station) {
             setStationName(station.name);
-            if (station.criteria && station.criteria.length > 0) {
-                setCriteria(station.criteria.map((name) => ({ name, level: 'developing' })));
-            } else {
-                setCriteria([]);
-            }
+            setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
+            if (station.feedbackItems?.length > 0) setFeedbackOptions(station.feedbackItems);
         }
     };
 
@@ -278,7 +269,7 @@ export default function EvaluationForm() {
                         <div className="feedback-section">
                             <h3>Areas to Work On (check all that apply)</h3>
                             <div className="feedback-grid">
-                                {COMMON_FEEDBACK.map((item) => (
+                                {feedbackOptions.map((item) => (
                                     <label key={item} className="feedback-checkbox-label">
                                         <input
                                             type="checkbox"

@@ -1,4 +1,5 @@
 import type { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import jwt from 'jsonwebtoken';
 import { Database } from './database';
 import type { User } from '@api/user/User';
@@ -6,6 +7,19 @@ import { PermFlags } from '@api/user/User';
 import type { LoginPayload, RegisterPayload, LoginResponse } from '@api/auth/Login';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// SSE broadcast: maps userId -> send function (null userId = broadcast to all)
+const sseClients = new Map<number, Set<(data: string) => void>>();
+
+function pushSSE(userId: number | null, data: object) {
+    const payload = JSON.stringify(data);
+    if (userId === null) {
+        // Broadcast to everyone
+        sseClients.forEach((clients) => clients.forEach((send) => send(payload)));
+    } else {
+        sseClients.get(userId)?.forEach((send) => send(payload));
+    }
+}
 
 export default function configureRoutes(routes: Hono, db: Database) {
     routes.post('/_health', (c) => {
@@ -146,20 +160,31 @@ export default function configureRoutes(routes: Hono, db: Database) {
             let proficient = 0;
             let developing = 0;
             let notStarted = 0;
+            let evaluatorCount = 0;
 
             users.forEach((user) => {
                 const key = `${user.id}:${stationId}`;
+                const nextKey = `${user.id}:${stationId + 1}`;
                 const latest = latestByUserStation.get(key);
+
+                // Count progress level
                 if (!latest || latest.score === null || latest.score === undefined) {
                     notStarted += 1;
-                    return;
-                }
-                if (latest.score >= 80) {
+                } else if (latest.score >= 80) {
                     mastery += 1;
                 } else if (latest.score >= 50) {
                     proficient += 1;
                 } else {
                     developing += 1;
+                }
+
+                // Count evaluators: elevated permission OR mastery here + passed next
+                const isElevated = (user.permFlags ?? 0) >= PermFlags.IsLeadership;
+                const hasCurrentMastery = isMastery(latest?.score);
+                const nextScore = stationId >= 6 ? 100 : latestByUserStation.get(nextKey)?.score;
+                const hasNextPass = stationId >= 6 || hasPassed(nextScore);
+                if (isElevated || (hasCurrentMastery && hasNextPass)) {
+                    evaluatorCount += 1;
                 }
             });
 
@@ -170,6 +195,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 proficient,
                 developing,
                 notStarted,
+                evaluatorCount,
                 totalUsers: users.length
             };
         });
@@ -311,7 +337,30 @@ export default function configureRoutes(routes: Hono, db: Database) {
             senderId: currentUserId,
             senderName: `${currentUser.firstName} ${currentUser.lastName}`
         });
+
+        // Push broadcast to all connected SSE clients
+        pushSSE(null, { type: 'notification', title: body.title, message: body.message, senderName: `${currentUser.firstName} ${currentUser.lastName}` });
+
         return c.json(notification);
+    });
+
+    // SSE stream for real-time notifications
+    routes.get('/notifications/stream', authMiddleware, (c) => {
+        const userId = (c as any).userId as number;
+        return streamSSE(c, async (stream) => {
+            const send = (data: string) => stream.writeSSE({ data }).catch(() => {});
+            if (!sseClients.has(userId)) sseClients.set(userId, new Set());
+            sseClients.get(userId)!.add(send);
+            stream.onAbort(() => {
+                sseClients.get(userId)?.delete(send);
+                if (sseClients.get(userId)?.size === 0) sseClients.delete(userId);
+            });
+            // Keep alive pings
+            while (true) {
+                await stream.writeSSE({ data: '', event: 'ping' });
+                await stream.sleep(25000);
+            }
+        });
     });
 
     routes.get('/admin/overview', authMiddleware, async (c) => {
@@ -466,13 +515,16 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
 
         try {
-            await db.createNotification({
-                title: `Station ${stationId} evaluation started`,
-                message: `You are now being evaluated for Station ${stationId}. Please meet the evaluator.`,
+            const notif = {
+                title: `It's your turn! — Station ${stationId}`,
+                message: `${currentUser.firstName} ${currentUser.lastName} is ready to evaluate you for Station ${stationId}. Head over now!`,
                 senderId: currentUserId,
                 senderName: `${currentUser.firstName} ${currentUser.lastName}`,
                 recipientId: removedEntry.userId
-            });
+            };
+            await db.createNotification(notif);
+            // Push real-time to the specific student
+            pushSSE(removedEntry.userId, { type: 'notification', title: notif.title, message: notif.message, senderName: notif.senderName });
         } catch (notificationError) {
             console.error('Queue notification failed after pull:', notificationError);
         }
@@ -497,9 +549,23 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
-        const body = await c.req.json() as { name: string; criteria: string[] };
+        const body = await c.req.json() as { name: string; criteria: string[]; feedbackItems?: string[] };
         const station = await db.createStation(body);
         return c.json(station);
+    });
+
+    // Instructor-accessible endpoint to list all stations with feedback items (read-only)
+    routes.get('/stations/feedback', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        const canView = currentUser && (
+            currentUser.permFlags >= PermFlags.IsLeadership ||
+            isElevatedOverride(testPermission ?? undefined)
+        );
+        if (!canView) return c.json({ error: 'Forbidden' }, 403);
+        const stations = await db.getAllStations();
+        return c.json(stations.map(s => ({ id: s.id, name: s.name, criteria: s.criteria, feedbackItems: s.feedbackItems })));
     });
 
     routes.put('/stations/:id', authMiddleware, async (c) => {
@@ -511,7 +577,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
 
         const stationId = parseInt(c.req.param('id'));
-        const updates = await c.req.json() as { name?: string; criteria?: string[] };
+        const updates = await c.req.json() as { name?: string; criteria?: string[]; feedbackItems?: string[] };
         await db.updateStation(stationId, updates);
         return c.json({ success: true });
     });

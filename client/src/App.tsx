@@ -19,6 +19,7 @@ import StationEvaluationSearch from "./components/pages/StationEvaluationSearch"
 import EvaluateAlt from "./components/pages/EvaluateAlt";
 import EvaluateAltExpanded from "./components/pages/EvaluateAltExpanded";
 import GetEvaluated from "./components/pages/GetEvaluated";
+import StationFeedbackView from "./components/pages/StationFeedbackView";
 import EditVTC from "./components/pages/EditVTC";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EvaluateSelectStation from "./components/pages/EvaluateSelectStation";
@@ -44,6 +45,7 @@ function App() {
 				<Route path="/station/:id" element={<StationDetail />} />
 				<Route path="/evaluate" element={<EvaluateSelectStation />} />
 				<Route path="/get-evaluated" element={<GetEvaluated />} />
+				<Route path="/station-reference" element={<StationFeedbackView />} />
 				<Route path="/admin/overview" element={
 					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
 						<DirectorOverview />

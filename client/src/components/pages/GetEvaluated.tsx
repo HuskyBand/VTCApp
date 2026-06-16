@@ -1,10 +1,17 @@
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { QRCodeSVG } from "qrcode.react";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
 
 export default function GetEvaluated() {
+    const nav = useNavigate();
     const user = UserManager.isLoggedIn ? UserManager.currentUser : null;
     const qrValue = user?.id ? String(user.id) : '';
+
+    useEffect(() => {
+        if (UserManager.isDirector) nav('/');
+    }, []);
 
     return (
         <>

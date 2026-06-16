@@ -7,7 +7,8 @@ const sqlite = sqlite3.verbose();
 export type Station = {
     id?: number;
     name: string;
-    criteria: string[]; // JSON string or array
+    criteria: string[];
+    feedbackItems: string[];
     createdAt?: string;
 };
 
@@ -86,6 +87,12 @@ export class Database {
         this.db.all('PRAGMA table_info(notifications)', [], (err, rows: any[]) => {
             if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
                 this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
+            }
+        });
+
+        this.db.all('PRAGMA table_info(stations)', [], (err, rows: any[]) => {
+            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'feedbackItems')) {
+                this.db.run("ALTER TABLE stations ADD COLUMN feedbackItems TEXT NOT NULL DEFAULT '[]'");
             }
         });
 
@@ -492,19 +499,12 @@ export class Database {
     }
 
     // Station methods
-    createStation(station: { name: string; criteria: string[] }): Promise<{ id: number }> {
+    createStation(station: { name: string; criteria: string[]; feedbackItems?: string[] }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
-            const sql = `
-                INSERT INTO stations (name, criteria)
-                VALUES (?, ?)
-            `;
-
+            const sql = `INSERT INTO stations (name, criteria, feedbackItems) VALUES (?, ?, ?)`;
             this.db.run(
                 sql,
-                [
-                    station.name,
-                    JSON.stringify(station.criteria)
-                ],
+                [station.name, JSON.stringify(station.criteria), JSON.stringify(station.feedbackItems ?? [])],
                 function(err) {
                     if (err) {
                         reject(err);
@@ -520,19 +520,15 @@ export class Database {
     getAllStations(): Promise<Station[]> {
         return new Promise((resolve, reject) => {
             this.db.all(
-                'SELECT id, name, criteria, createdAt FROM stations ORDER BY id ASC',
+                'SELECT id, name, criteria, feedbackItems, createdAt FROM stations ORDER BY id ASC',
                 [],
                 (err, rows) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
+                    if (err) { reject(err); return; }
                     const stations = (rows as any[]).map(row => ({
                         ...row,
-                        criteria: JSON.parse(row.criteria)
+                        criteria: JSON.parse(row.criteria),
+                        feedbackItems: row.feedbackItems ? JSON.parse(row.feedbackItems) : []
                     }));
-
                     resolve(stations);
                 }
             );
@@ -542,29 +538,22 @@ export class Database {
     getStationById(id: number): Promise<Station | null> {
         return new Promise((resolve, reject) => {
             this.db.get(
-                'SELECT id, name, criteria, createdAt FROM stations WHERE id = ?',
+                'SELECT id, name, criteria, feedbackItems, createdAt FROM stations WHERE id = ?',
                 [id],
                 (err, row) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    if (!row) {
-                        resolve(null);
-                        return;
-                    }
-
+                    if (err) { reject(err); return; }
+                    if (!row) { resolve(null); return; }
                     resolve({
                         ...row as Station,
-                        criteria: JSON.parse((row as any).criteria)
+                        criteria: JSON.parse((row as any).criteria),
+                        feedbackItems: (row as any).feedbackItems ? JSON.parse((row as any).feedbackItems) : []
                     });
                 }
             );
         });
     }
 
-    updateStation(id: number, updates: { name?: string; criteria?: string[] }): Promise<void> {
+    updateStation(id: number, updates: { name?: string; criteria?: string[]; feedbackItems?: string[] }): Promise<void> {
         return new Promise((resolve, reject) => {
             const fields = [];
             const values = [];
@@ -577,6 +566,11 @@ export class Database {
             if (updates.criteria !== undefined) {
                 fields.push('criteria = ?');
                 values.push(JSON.stringify(updates.criteria));
+            }
+
+            if (updates.feedbackItems !== undefined) {
+                fields.push('feedbackItems = ?');
+                values.push(JSON.stringify(updates.feedbackItems));
             }
 
             if (fields.length === 0) {
