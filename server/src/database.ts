@@ -77,9 +77,15 @@ export class Database {
             )
         `);
 
-        this.db.get('PRAGMA table_info(evaluations)', [], (err, rows: any) => {
+        this.db.all('PRAGMA table_info(evaluations)', [], (err, rows: any[]) => {
             if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
                 this.db.run('ALTER TABLE evaluations ADD COLUMN criteria TEXT');
+            }
+        });
+
+        this.db.all('PRAGMA table_info(notifications)', [], (err, rows: any[]) => {
+            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
+                this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
             }
         });
 
