@@ -228,13 +228,29 @@ class UserManager {
         return response.body;
     }
 
-    async submitEvaluation(userId: number, stationId: number, score?: number, comments?: string, criteria?: string[]): Promise<boolean> {
+    async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[] } | null> {
+        const response = await http.get<{ id: number; name: string; criteria: string[] }>(`/stations/${stationId}`);
+        if (!response.ok || !response.body) return null;
+        return response.body;
+    }
+
+    async submitEvaluation(
+        userId: number,
+        stationId: number,
+        score?: number,
+        comments?: string,
+        criteria?: string[],
+        feedbackItems?: string[],
+        overallStatus?: string
+    ): Promise<boolean> {
         const response = await http.post(Endpoints.evaluations.submit, {
             userId,
             stationId,
             score,
             comments,
-            criteria
+            criteria,
+            feedbackItems,
+            overallStatus
         });
         return response.ok;
     }

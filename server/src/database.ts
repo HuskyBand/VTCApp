@@ -245,8 +245,8 @@ export class Database {
     }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
             const sql = `
-                INSERT INTO evaluations (userId, evaluatorId, stationId, score, comments)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO evaluations (userId, evaluatorId, stationId, score, comments, criteria)
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
 
             this.db.run(

@@ -41,6 +41,7 @@ export default function BottomNav() {
     return (
         <nav className="bottom-nav">
             <Link to="/" className="nav-item">Home</Link>
+            {UserManager.isLoggedIn && <Link to="/get-evaluated" className="nav-item">My QR</Link>}
             {showEvaluate && <Link to="/evaluate" className="nav-item">Evaluate</Link>}
             <Link to="/profile" className="nav-item">Profile</Link>
             {canViewAdmin && <Link to="/admin/overview" className="nav-item">Director</Link>}

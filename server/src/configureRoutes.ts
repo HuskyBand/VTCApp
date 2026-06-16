@@ -232,6 +232,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
             score?: number;
             comments?: string;
             criteria?: string[];
+            feedbackItems?: string[];
+            overallStatus?: string;
         };
         const testPermission = c.req.header('X-Test-Permission');
 
@@ -258,6 +260,27 @@ export default function configureRoutes(routes: Hono, db: Database) {
             comments: body.comments,
             criteria: body.criteria ?? []
         });
+
+        // Notify the evaluated band member with their results
+        try {
+            const passed = body.overallStatus === 'proficient' || body.overallStatus === 'mastery';
+            const statusLine = `Overall: ${body.overallStatus ?? 'developing'} — ${passed ? 'PASSED' : 'NOT YET PASSED'}`;
+            const feedbackLine = body.feedbackItems && body.feedbackItems.length > 0
+                ? `\nAreas to work on:\n${body.feedbackItems.map(f => `• ${f}`).join('\n')}`
+                : '';
+            const commentLine = body.comments ? `\nEvaluator notes: ${body.comments}` : '';
+
+            await db.createNotification({
+                title: `Station ${body.stationId} Evaluation Results`,
+                message: `${statusLine}${feedbackLine}${commentLine}`,
+                senderId: evaluatorId,
+                senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+                recipientId: body.userId
+            });
+        } catch (notificationError) {
+            console.error('Failed to send evaluation result notification:', notificationError);
+        }
+
         return c.json(evaluation);
     });
 
@@ -306,12 +329,27 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/evaluations/:userId', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
+        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (currentUserId !== targetUserId && currentUser?.permFlags !== PermFlags.IsDirector) {
+        const canViewAny = currentUser?.permFlags === PermFlags.IsDirector ||
+            currentUser?.permFlags === PermFlags.IsAssistant ||
+            currentUser?.permFlags === PermFlags.IsLeadership ||
+            isElevatedOverride(testPermission ?? undefined);
+        if (currentUserId !== targetUserId && !canViewAny) {
             return c.json({ error: 'Forbidden' }, 403);
         }
         const evaluations = await db.getEvaluationsForUser(targetUserId);
         return c.json(evaluations);
+    });
+
+    // Public (any authenticated user) station lookup
+    routes.get('/stations/:id', authMiddleware, async (c) => {
+        const stationId = parseInt(c.req.param('id'));
+        const station = await db.getStationById(stationId);
+        if (!station) {
+            return c.json({ id: stationId, name: `Station ${stationId}`, criteria: [] });
+        }
+        return c.json(station);
     });
 
     // Station management routes (director only)
