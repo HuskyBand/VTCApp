@@ -131,6 +131,25 @@ export class Database {
                 UNIQUE (stationId, userId)
             )
         `);
+
+        // Seed the 6 default stations if none exist yet
+        this.db.get('SELECT COUNT(*) as count FROM stations', [], (err, row: any) => {
+            if (err || (row?.count ?? 0) > 0) return;
+            const defaults = [
+                { id: 1, name: 'Station 1' },
+                { id: 2, name: 'Station 2' },
+                { id: 3, name: 'Station 3' },
+                { id: 4, name: 'Station 4' },
+                { id: 5, name: 'Station 5' },
+                { id: 6, name: 'Station 6' },
+            ];
+            for (const s of defaults) {
+                this.db.run(
+                    "INSERT OR IGNORE INTO stations (id, name, criteria, feedbackItems) VALUES (?, ?, '[]', '[]')",
+                    [s.id, s.name]
+                );
+            }
+        });
     }
 
     async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User & { id: number }> {
