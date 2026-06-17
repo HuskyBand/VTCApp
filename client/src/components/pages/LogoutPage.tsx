@@ -25,13 +25,13 @@ export default function LogoutPage() {
         logoutActually().catch((err) => {
             console.error(`Something went wrong while logging out: ${err}`);
         });
-    });
+    }, []);
 
 	React.useEffect(() => {
         if (redirectState) {
             nav('/');
         }
-	});
+	}, [redirectState]);
 
     return (
     <>
