@@ -391,12 +391,26 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(evaluations);
     });
 
+    // Instructor-accessible endpoint — MUST be before /stations/:id to avoid being swallowed by the param route
+    routes.get('/stations/feedback', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        const canView = currentUser && (
+            currentUser.permFlags >= PermFlags.IsLeadership ||
+            isElevatedOverride(testPermission ?? undefined)
+        );
+        if (!canView) return c.json({ error: 'Forbidden' }, 403);
+        const stations = await db.getAllStations();
+        return c.json(stations.map(s => ({ id: s.id, name: s.name, criteria: s.criteria, feedbackItems: s.feedbackItems })));
+    });
+
     // Public (any authenticated user) station lookup
     routes.get('/stations/:id', authMiddleware, async (c) => {
         const stationId = parseInt(c.req.param('id'));
         const station = await db.getStationById(stationId);
         if (!station) {
-            return c.json({ id: stationId, name: `Station ${stationId}`, criteria: [] });
+            return c.json({ id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [] });
         }
         return c.json(station);
     });
@@ -552,20 +566,6 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const body = await c.req.json() as { name: string; criteria: string[]; feedbackItems?: string[] };
         const station = await db.createStation(body);
         return c.json(station);
-    });
-
-    // Instructor-accessible endpoint to list all stations with feedback items (read-only)
-    routes.get('/stations/feedback', authMiddleware, async (c) => {
-        const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
-        const currentUser = await db.getUserById(currentUserId);
-        const canView = currentUser && (
-            currentUser.permFlags >= PermFlags.IsLeadership ||
-            isElevatedOverride(testPermission ?? undefined)
-        );
-        if (!canView) return c.json({ error: 'Forbidden' }, 403);
-        const stations = await db.getAllStations();
-        return c.json(stations.map(s => ({ id: s.id, name: s.name, criteria: s.criteria, feedbackItems: s.feedbackItems })));
     });
 
     routes.put('/stations/:id', authMiddleware, async (c) => {

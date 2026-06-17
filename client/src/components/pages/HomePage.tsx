@@ -49,7 +49,8 @@ export default function HomePage() {
     const nav = useNavigate();
     const [permission, setPermission] = useState(PermissionManager.permission);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
-    const [notifications, setNotifications] = useState<Array<{ title: string; message: string; senderName: string; createdAt: string }>>([]);
+    const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
+    const [showAllNotifs, setShowAllNotifs] = useState(false);
 
     useEffect(() => {
         loadEvaluations();
@@ -69,7 +70,7 @@ export default function HomePage() {
         }
 
         const latestNotifications = await UserManager.getNotifications();
-        setNotifications(latestNotifications.slice(0, 3));
+        setNotifications(latestNotifications);
     };
 
     const handlePermissionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -120,21 +121,49 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    {notifications.length > 0 && (
-                        <div className="home-notifications">
-                            <h3>Notifications</h3>
-                            {notifications.map((note, index) => (
-                                <div key={index} className="notification-card">
-                                    <div className="notification-header">
-                                        <strong>{note.title}</strong>
-                                        <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                    {notifications.length > 0 && (() => {
+                        const latest = notifications[0];
+                        const rest = notifications.slice(1);
+                        return (
+                            <div className="home-notif-section">
+                                {/* Most recent — prominent card */}
+                                <div className="notif-latest-card">
+                                    <div className="notif-latest-badge">📣 Latest</div>
+                                    <div className="notif-latest-title">{latest.title}</div>
+                                    <div className="notif-latest-body">{latest.message}</div>
+                                    <div className="notif-latest-meta">
+                                        <span>From {latest.senderName}</span>
+                                        <span>{new Date(latest.createdAt).toLocaleString()}</span>
                                     </div>
-                                    <p>{note.message}</p>
-                                    <div className="notification-footer">From {note.senderName}</div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+
+                                {rest.length > 0 && (
+                                    <>
+                                        <button
+                                            className="notif-toggle-btn"
+                                            onClick={() => setShowAllNotifs(v => !v)}
+                                        >
+                                            {showAllNotifs ? '▲ Hide older notifications' : `▼ Show ${rest.length} older notification${rest.length !== 1 ? 's' : ''}`}
+                                        </button>
+                                        {showAllNotifs && (
+                                            <div className="notif-older-list">
+                                                {rest.map((note) => (
+                                                    <div key={note.id} className="notif-older-card">
+                                                        <div className="notif-older-row">
+                                                            <strong>{note.title}</strong>
+                                                            <span className="notif-older-time">{new Date(note.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="notif-older-body">{note.message}</p>
+                                                        <div className="notif-older-meta">From {note.senderName}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     <div className="stations-list">
                         {stations.map(station => {
@@ -168,6 +197,44 @@ export default function HomePage() {
                 </div>
             </section>
             <BottomNav />
+            <style>{`
+                .home-notif-section { margin-bottom: 1.25rem; }
+                .notif-latest-card {
+                    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+                    border: 1.5px solid #93c5fd;
+                    border-radius: 12px;
+                    padding: 1rem 1.1rem;
+                }
+                .notif-latest-badge {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #1d4ed8;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.35rem;
+                }
+                .notif-latest-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; }
+                .notif-latest-body { font-size: 0.9rem; color: #374151; margin-bottom: 0.5rem; white-space: pre-line; }
+                .notif-latest-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #9ca3af; }
+                .notif-toggle-btn {
+                    width: 100%;
+                    margin-top: 0.6rem;
+                    padding: 0.45rem;
+                    background: none;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.85rem;
+                    color: #6b7280;
+                }
+                .notif-toggle-btn:hover { background: #f9fafb; }
+                .notif-older-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+                .notif-older-card { padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: white; }
+                .notif-older-row { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
+                .notif-older-time { font-size: 0.75rem; color: #9ca3af; white-space: nowrap; }
+                .notif-older-body { font-size: 0.85rem; margin: 0 0 0.2rem; white-space: pre-line; }
+                .notif-older-meta { font-size: 0.75rem; color: #9ca3af; }
+            `}</style>
         </>
     );
 }
