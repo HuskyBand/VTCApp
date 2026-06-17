@@ -34,7 +34,7 @@ export default function BottomNav() {
     }, [canEvaluate]);
 
     const showEvaluate = canViewAdmin || canEvaluate || hasProgressAccess;
-    const showQR = UserManager.isLoggedIn && !isDirector;
+    const showQR = UserManager.isLoggedIn && !canViewAdmin;
 
     return (
         <nav className="bottom-nav">

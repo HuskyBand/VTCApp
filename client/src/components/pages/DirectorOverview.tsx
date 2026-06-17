@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
 import PermissionManager from '@client/stores/PermissionManager';
@@ -100,7 +100,10 @@ export default function DirectorOverview() {
         <>
             <section id="center">
                 <div className="director-page">
-                    <h1>Director Overview</h1>
+                    <div className="director-header">
+                        <h1>Director Overview</h1>
+                        <Link to="/admin/stations" className="button primary sm">⚙️ Manage Stations</Link>
+                    </div>
 
                     {error && <div className="message error-message">{error}</div>}
                     {success && <div className="message success-message">{success}</div>}
@@ -242,6 +245,8 @@ export default function DirectorOverview() {
             <BottomNav />
             <style>{`
                 .director-page { padding-bottom: 2rem; }
+                .director-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+                .director-header h1 { margin: 0; }
                 .section-heading { margin: 1.75rem 0 0.75rem; font-size: 1.15rem; font-weight: 700; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
                 .summary-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
                 .summary-chip { background: #f3f4f6; border-radius: 20px; padding: 0.3rem 0.9rem; font-size: 0.85rem; font-weight: 600; }
