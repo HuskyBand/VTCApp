@@ -20,12 +20,6 @@ type Criterion = {
     level: CriterionLevel;
 };
 
-const DEFAULT_FEEDBACK: string[] = [
-    'Tone quality', 'Rhythm accuracy', 'Articulation', 'Dynamics',
-    'Intonation', 'Posture / instrument technique', 'Memorization',
-    'Sight reading', 'Tempo consistency', 'Note accuracy',
-];
-
 const levelScore: Record<CriterionLevel, number> = {
     developing: 33,
     proficient: 67,
@@ -37,7 +31,7 @@ export default function EvaluationForm() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
-    const [feedbackOptions, setFeedbackOptions] = useState<string[]>(DEFAULT_FEEDBACK);
+    const [feedbackOptions, setFeedbackOptions] = useState<string[]>([]);
     const [stationName, setStationName] = useState(`Station ${stationId}`);
     const [feedbackChecked, setFeedbackChecked] = useState<Set<string>>(new Set());
     const [comments, setComments] = useState('');
@@ -67,7 +61,7 @@ export default function EvaluationForm() {
         if (station) {
             setStationName(station.name);
             setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
-            if (station.feedbackItems?.length > 0) setFeedbackOptions(station.feedbackItems);
+            setFeedbackOptions(station.feedbackItems ?? []);
         }
     };
 
@@ -268,18 +262,22 @@ export default function EvaluationForm() {
                         {/* Feedback checkboxes */}
                         <div className="feedback-section">
                             <h3>Areas to Work On (check all that apply)</h3>
-                            <div className="feedback-grid">
-                                {feedbackOptions.map((item) => (
-                                    <label key={item} className="feedback-checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            checked={feedbackChecked.has(item)}
-                                            onChange={() => toggleFeedback(item)}
-                                        />
-                                        {item}
-                                    </label>
-                                ))}
-                            </div>
+                            {feedbackOptions.length > 0 ? (
+                                <div className="feedback-grid">
+                                    {feedbackOptions.map((item) => (
+                                        <label key={item} className="feedback-checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={feedbackChecked.has(item)}
+                                                onChange={() => toggleFeedback(item)}
+                                            />
+                                            {item}
+                                        </label>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="empty-hint">No feedback items configured for this station. A director can add them under Admin → Stations.</p>
+                            )}
                         </div>
 
                         {/* Overall status summary */}

@@ -142,7 +142,7 @@ export default function StationManagement() {
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label>Common Feedback Items <span className="label-hint">(one per line)</span></label>
+                                            <label>Areas to Work On <span className="label-hint">(one per line)</span></label>
                                             <textarea
                                                 className="text-input"
                                                 value={editState.feedbackItems}
@@ -173,7 +173,7 @@ export default function StationManagement() {
                                                     : <p className="empty-hint">None set</p>}
                                             </div>
                                             <div className="station-view-col">
-                                                <strong>Common Feedback</strong>
+                                                <strong>Areas to Work On</strong>
                                                 {station.feedbackItems.length > 0
                                                     ? <ul>{station.feedbackItems.map((f, i) => <li key={i}>{f}</li>)}</ul>
                                                     : <p className="empty-hint">None set</p>}
@@ -207,7 +207,7 @@ export default function StationManagement() {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Common Feedback Items <span className="label-hint">(one per line)</span></label>
+                            <label>Areas to Work On <span className="label-hint">(one per line)</span></label>
                             <textarea
                                 className="text-input"
                                 value={newStation.feedbackItems}
