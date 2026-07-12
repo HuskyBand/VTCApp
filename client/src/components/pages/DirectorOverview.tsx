@@ -15,7 +15,6 @@ type StationSummary = {
 };
 type OverviewData = { stations: StationSummary[]; totalUsers: number; totalNotifications: number };
 type NotificationItem = { id: number; title: string; message: string; senderName: string; createdAt: string };
-type UserProgress = { userId: number; firstName: string; lastName: string; instrument: string; evaluations: EvaluationRecord[] };
 type LiveNotif = { title: string; message: string; senderName: string; ts: number };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -63,11 +62,11 @@ export default function DirectorOverview() {
             ]);
             setOverview(overviewData);
             setNotifications(notifData ?? []);
-            setUsers(allUsers ?? []);
+            setUsers((allUsers ?? []).filter((u): u is User & { id: number } => u.id !== undefined));
 
             // Load evaluations for all users in parallel
             const entries = await Promise.all(
-                (allUsers ?? []).filter(u => u.id).map(async (u: User & { id: number }) => {
+                (allUsers ?? []).filter((u): u is User & { id: number } => u.id !== undefined).map(async (u: User & { id: number }) => {
                     const evals = await UserManager.getEvaluationsForUser(u.id).catch(() => []);
                     return [u.id, evals] as [number, EvaluationRecord[]];
                 })

@@ -13,7 +13,6 @@ const stations = [1, 2, 3, 4, 5, 6];
 export default function BottomNav() {
     const canViewAdmin = PermissionManager.canViewAdmin();
     const canEvaluate = PermissionManager.canEvaluate();
-    const isDirector = UserManager.isLoggedIn && UserManager.isDirector;
     const [hasProgressAccess, setHasProgressAccess] = useState(false);
 
     useEffect(() => {
