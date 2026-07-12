@@ -18,7 +18,7 @@ export class HttpClient {
     private _tokenProvider?: () => string | null;
 
     constructor() {
-        this._baseUrl = DEFAULT_BASE_API_URL;
+        this._baseUrl = import.meta.env.VITE_API_URL || DEFAULT_BASE_API_URL;
         this._apiVersion = DEFAULT_API_VERSION;
     }
 
