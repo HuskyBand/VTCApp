@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
+import { isMasteryLocked } from "@client/utils/evaluationHelpers";
 
 export default function StationDetail() {
     const { id } = useParams();
@@ -55,6 +56,8 @@ export default function StationDetail() {
             setQueueError('Failed to load queue status.');
         }
     };
+
+    const atMastery = isMasteryLocked(evaluations, Number(id));
 
     const isInQueue = () => queue.some((entry) => entry.userId === UserManager.currentUser.id);
     const queuePosition = () => {
@@ -162,7 +165,9 @@ export default function StationDetail() {
                             )}
                         </div>
                         <div className="queue-actions">
-                            {isInQueue() ? (
+                            {atMastery ? (
+                                <p className="mastery-note">You've already reached mastery for this station.</p>
+                            ) : isInQueue() ? (
                                 <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
                             ) : (
                                 <button className="button primary" onClick={joinQueue}>Join Queue</button>

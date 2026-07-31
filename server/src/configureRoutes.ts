@@ -450,6 +450,11 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
+        const latestEvaluation = await db.getLatestEvaluationForUserStation(currentUserId, stationId);
+        if (latestEvaluation && latestEvaluation.score !== undefined && latestEvaluation.score >= 80) {
+            return c.json({ error: 'You have already reached mastery for this station and cannot join its queue.' }, 400);
+        }
+
         const existing = await db.getQueueEntry(stationId, currentUserId);
         if (existing) {
             return c.json({ success: true, message: 'Already in queue.' });
