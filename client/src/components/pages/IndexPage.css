@@ -429,6 +429,7 @@ select.text-input {
     border-radius: 6px;
     font-size: 16px;
     background: white;
+    color: #1a1a1a;
     cursor: pointer;
 }
 
