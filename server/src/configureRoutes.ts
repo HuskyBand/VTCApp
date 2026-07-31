@@ -417,15 +417,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(station);
     });
 
-    // Station management routes (director only)
     routes.get('/stations', authMiddleware, async (c) => {
-        const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
-        const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
-            return c.json({ error: 'Forbidden' }, 403);
-        }
-
         const stations = await db.getAllStations();
         return c.json(stations);
     });

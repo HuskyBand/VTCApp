@@ -15,19 +15,11 @@ type Station = {
     name: string;
 };
 
-const stations: Station[] = [
-    { id: 1, name: 'Station 1' },
-    { id: 2, name: 'Station 2' },
-    { id: 3, name: 'Station 3' },
-    { id: 4, name: 'Station 4' },
-    { id: 5, name: 'Station 5' },
-    { id: 6, name: 'Station 6' },
-];
-
 export default function EvaluateSelectStation() {
     const nav = useNavigate();
     const [selectedStation, setSelectedStation] = useState<number | null>(null);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
+    const [stations, setStations] = useState<Station[]>([]);
     const [queue, setQueue] = useState<Array<{ id: number; name: string; userId: number; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
@@ -48,6 +40,8 @@ export default function EvaluateSelectStation() {
             try {
                 const result = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
                 setEvaluations(result);
+                const stationList = await UserManager.getStations();
+                setStations(stationList);
             } catch {
                 setError('Unable to load your station progress.');
             }
@@ -191,6 +185,9 @@ export default function EvaluateSelectStation() {
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="stations-select-list">
+                        {stations.length === 0 && (
+                            <p className="no-stations-message">No stations available yet.</p>
+                        )}
                         {stations.map((station) => {
                             const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, station.id);
                             const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, station.id);

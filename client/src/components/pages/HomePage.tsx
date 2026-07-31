@@ -13,18 +13,8 @@ import {
 type Station = {
     id: number;
     name: string;
-    status: 'completed' | 'in_progress' | 'not_started';
+    criteria: string[];
 };
-
-const stations: Station[] = [
-    { id: 1, name: 'Station 1', status: 'not_started' },
-    { id: 2, name: 'Station 2', status: 'not_started' },
-    { id: 3, name: 'Station 3', status: 'not_started' },
-    { id: 4, name: 'Station 4', status: 'not_started' },
-    { id: 5, name: 'Station 5', status: 'not_started' },
-    { id: 6, name: 'Station 6', status: 'not_started' },
-    // Add more as needed
-];
 
 const getStatusIndicator = (status: string) => {
     switch (status) {
@@ -51,11 +41,18 @@ export default function HomePage() {
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
+    const [stations, setStations] = useState<Station[]>([]);
 
     useEffect(() => {
         loadEvaluations();
         loadNotifications();
+        loadStations();
     }, []);
+
+    const loadStations = async () => {
+        const data = await UserManager.getStations();
+        setStations(data);
+    };
 
     const loadEvaluations = async () => {
         if (UserManager.isLoggedIn) {
@@ -166,6 +163,13 @@ export default function HomePage() {
                     })()}
 
                     <div className="stations-list">
+                        {stations.length === 0 && (
+                            PermissionManager.canViewAdmin() ? (
+                                <p className="no-stations-message">No stations have been set up yet. Add your first station to get started.</p>
+                            ) : (
+                                <p className="no-stations-message">No stations have been set up yet. Check back once your director adds some.</p>
+                            )
+                        )}
                         {stations.map(station => {
                             const status = getStationStatus(station.id);
                             const unlocked = isStationUnlocked(station.id);
