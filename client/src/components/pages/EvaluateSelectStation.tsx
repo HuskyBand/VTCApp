@@ -221,7 +221,7 @@ export default function EvaluateSelectStation() {
                                 {queue.length > 0 && (
                                     <ol>
                                         {queue.map((entry) => (
-                                            <li key={entry.id}>{entry.position}. {entry.name} {entry.position === 1 ? '(next)' : ''}</li>
+                                            <li key={entry.id}>{entry.name} {entry.position === 1 ? '(next)' : ''}</li>
                                         ))}
                                     </ol>
                                 )}
