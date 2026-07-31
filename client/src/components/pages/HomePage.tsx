@@ -85,6 +85,9 @@ export default function HomePage() {
     };
 
     const isStationUnlocked = (stationId: number): boolean => {
+        if (UserManager.isTA || UserManager.isDirector || PermissionManager.canViewAdmin()) {
+            return true;
+        }
         if (stationId <= 1) {
             return true;
         }
