@@ -65,6 +65,8 @@ export default function EvaluateSelectStation() {
             }
         };
         loadQueue();
+        const interval = setInterval(loadQueue, 5000);
+        return () => clearInterval(interval);
     }, [selectedStation]);
 
     // Clean up camera on unmount
