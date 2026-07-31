@@ -10,10 +10,12 @@ export default function StationDetail() {
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
+    const [station, setStation] = useState<{ id: number; name: string; criteria: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [] });
 
     useEffect(() => {
         loadEvaluations();
         loadQueue();
+        loadStation();
     }, [id]);
 
     // Refresh evaluations periodically
@@ -31,6 +33,12 @@ export default function StationDetail() {
             const stationEvaluations = userEvaluations.filter((evaluation: any) => evaluation.stationId === parseInt(id!));
             setEvaluations(stationEvaluations);
         }
+    };
+
+    const loadStation = async () => {
+        if (!id) return;
+        const data = await UserManager.getStation(Number(id));
+        if (data) setStation(data);
     };
 
     const loadQueue = async () => {
@@ -118,13 +126,6 @@ export default function StationDetail() {
         }
     };
 
-    // Mock data
-    const station = { name: `Station ${id}`, criteria: [
-        { name: 'Criteria 1', items: ['Not yet', 'In progress', 'Satisfactory', 'Exceeding Standard'] },
-        { name: 'Criteria 2', items: ['Not yet', 'In progress', 'Satisfactory', 'Exceeding Standard'] },
-        // Add more
-    ] };
-
     return (
         <>
             <section id="center">
@@ -137,6 +138,17 @@ export default function StationDetail() {
                             <div className="status-value">{getStatusLabel(getLatestStatus())}</div>
                         </div>
                     </div>
+
+                    {station.criteria.length > 0 && (
+                        <div className="criteria-summary">
+                            <h3>What to strive for</h3>
+                            <ul>
+                                {station.criteria.map((c) => (
+                                    <li key={c}>{c}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     <div className="queue-panel">
                         <h3>Evaluation Queue</h3>
@@ -263,23 +275,6 @@ export default function StationDetail() {
                         )
                     )}
 
-                    <div className="criteria-list">
-                        {station.criteria.map((crit, idx) => (
-                            <div key={idx} className="criteria-section">
-                                <h3>{crit.name}</h3>
-                                <ul>
-                                    {crit.items.map((item, i) => <li key={i}>{item}</li>)}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="rubric">
-                        <h3>Rubric</h3>
-                        <ul>
-                            <li>Guidance text 1</li>
-                            <li>Guidance text 2</li>
-                        </ul>
-                    </div>
                 </div>
             </section>
             <BottomNav />
