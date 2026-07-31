@@ -1,0 +1,75 @@
+import { useEffect, useState, useRef } from "react";
+import UserManager from "@client/stores/UserManager";
+
+const LAST_SEEN_KEY = 'last_seen_broadcast_id';
+
+export default function BroadcastPopup() {
+    const [broadcast, setBroadcast] = useState<{ id: number; title: string; message: string; senderName: string } | null>(null);
+    const lastSeenId = useRef<number>(Number(localStorage.getItem(LAST_SEEN_KEY) ?? 0));
+
+    useEffect(() => {
+        const check = async () => {
+            if (!UserManager.isLoggedIn) return;
+            const notifications = await UserManager.getNotifications();
+            const latestBroadcast = notifications.find((n: any) => n.category === 'broadcast');
+            if (latestBroadcast && latestBroadcast.id > lastSeenId.current) {
+                setBroadcast(latestBroadcast);
+            }
+        };
+        check();
+        const interval = setInterval(check, 15000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const dismiss = () => {
+        if (broadcast) {
+            lastSeenId.current = broadcast.id;
+            localStorage.setItem(LAST_SEEN_KEY, String(broadcast.id));
+        }
+        setBroadcast(null);
+    };
+
+    if (!broadcast) return null;
+
+    return (
+        <div className="broadcast-overlay" onClick={dismiss}>
+            <div className="broadcast-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="broadcast-badge">📢 Director Broadcast</div>
+                <h3>{broadcast.title}</h3>
+                <p>{broadcast.message}</p>
+                <div className="broadcast-meta">From {broadcast.senderName}</div>
+                <button className="button primary" onClick={dismiss}>Got it</button>
+            </div>
+            <style>{`
+                .broadcast-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                }
+                .broadcast-modal {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 1.5rem;
+                    max-width: 420px;
+                    width: 90%;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                }
+                .broadcast-badge {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #1d4ed8;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.5rem;
+                }
+                .broadcast-modal h3 { margin: 0 0 0.5rem; }
+                .broadcast-modal p { white-space: pre-line; margin: 0 0 0.75rem; }
+                .broadcast-meta { font-size: 0.8rem; color: #6b7280; margin-bottom: 1rem; }
+            `}</style>
+        </div>
+    );
+}

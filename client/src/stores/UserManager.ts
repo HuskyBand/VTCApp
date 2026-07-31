@@ -168,12 +168,12 @@ class UserManager {
         return response.body;
     }
 
-    async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+    async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>> {
         const response = await http.get(Endpoints.notifications.list);
         if (!response.ok || !response.body) {
             return [];
         }
-        return response.body as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>;
+        return response.body as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>;
     }
 
     async createNotification(title: string, message: string): Promise<boolean> {

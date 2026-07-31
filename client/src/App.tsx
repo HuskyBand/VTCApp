@@ -27,10 +27,12 @@ import EvaluationForm from "./components/pages/EvaluationForm";
 import StationManagement from "./components/pages/StationManagement";
 import DirectorOverview from "./components/pages/DirectorOverview";
 import RequireAuth from "./components/RequireAuth";
+import BroadcastPopup from "./components/BroadcastPopup";
 
 function App() {
   return (
     <>
+			<BroadcastPopup />
 			<Routes>
 				<Route index element={<IndexPage />} />
 				<Route path="/logout" element={<LogoutPage />} />
