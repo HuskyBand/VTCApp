@@ -88,6 +88,9 @@ export class Database {
             if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
                 this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
             }
+            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'category')) {
+                this.db.run("ALTER TABLE notifications ADD COLUMN category TEXT NOT NULL DEFAULT 'general'");
+            }
         });
 
         this.db.all('PRAGMA table_info(stations)', [], (err, rows: any[]) => {
@@ -113,6 +116,7 @@ export class Database {
                 senderId INTEGER NOT NULL,
                 senderName TEXT NOT NULL,
                 recipientId INTEGER,
+                category TEXT NOT NULL DEFAULT 'general',
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (senderId) REFERENCES users(id),
                 FOREIGN KEY (recipientId) REFERENCES users(id)
@@ -368,11 +372,11 @@ export class Database {
         });
     }
 
-    createNotification(notification: { title: string; message: string; senderId: number; senderName: string; recipientId?: number | null }): Promise<{ id: number }> {
+    createNotification(notification: { title: string; message: string; senderId: number; senderName: string; recipientId?: number | null; category?: 'general' | 'queue' | 'broadcast' }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
             const sql = `
-                INSERT INTO notifications (title, message, senderId, senderName, recipientId)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO notifications (title, message, senderId, senderName, recipientId, category)
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
 
             this.db.run(
@@ -382,7 +386,8 @@ export class Database {
                     notification.message,
                     notification.senderId,
                     notification.senderName,
-                    notification.recipientId ?? null
+                    notification.recipientId ?? null,
+                    notification.category ?? 'general'
                 ],
                 function(err) {
                     if (err) {
@@ -396,11 +401,11 @@ export class Database {
         });
     }
 
-    getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+    getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; category: string; createdAt: string }>> {
         return new Promise((resolve, reject) => {
             const sql = isDirector
-                ? 'SELECT id, title, message, senderName, createdAt FROM notifications ORDER BY createdAt DESC'
-                : 'SELECT id, title, message, senderName, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY createdAt DESC';
+                ? "SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE category != 'queue' ORDER BY createdAt DESC"
+                : 'SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY createdAt DESC';
             const params = isDirector ? [] : [userId];
 
             this.db.all(sql, params, (err, rows) => {
@@ -409,7 +414,7 @@ export class Database {
                     return;
                 }
 
-                resolve((rows as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>) || []);
+                resolve((rows as Array<{ id: number; title: string; message: string; senderName: string; category: string; createdAt: string }>) || []);
             });
         });
     }

@@ -139,7 +139,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
             message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
             senderId,
             senderName,
-            recipientId: first.userId
+            recipientId: first.userId,
+            category: 'queue'
         });
     };
 
@@ -335,7 +336,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
             title: body.title,
             message: body.message,
             senderId: currentUserId,
-            senderName: `${currentUser.firstName} ${currentUser.lastName}`
+            senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+            category: 'broadcast'
         });
 
         // Push broadcast to all connected SSE clients
@@ -479,7 +481,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                     message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
                     senderId: currentUserId,
                     senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-                    recipientId: currentUserId
+                    recipientId: currentUserId,
+                    category: 'queue'
                 });
             } catch (notificationError) {
                 console.error('Queue notification failed after join:', notificationError);
@@ -534,7 +537,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 message: `${currentUser.firstName} ${currentUser.lastName} is ready to evaluate you for Station ${stationId}. Head over now!`,
                 senderId: currentUserId,
                 senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-                recipientId: removedEntry.userId
+                recipientId: removedEntry.userId,
+                category: 'queue' as const
             };
             await db.createNotification(notif);
             // Push real-time to the specific student
