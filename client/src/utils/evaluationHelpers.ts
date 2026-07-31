@@ -81,3 +81,12 @@ export const isMasteryLocked = (evaluations: EvaluationRecord[], stationId: numb
     const latest = getLatestStationEvaluation(evaluations, stationId);
     return scoreToStatus(latest?.score) === 'mastery';
 };
+
+const statusLabels: Record<EvaluationStatus, string> = {
+    not_started: 'Not Started',
+    developing: 'Developing',
+    satisfactory: 'Satisfactory',
+    mastery: 'Mastery',
+};
+
+export const getStatusLabel = (status: EvaluationStatus): string => statusLabels[status];

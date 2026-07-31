@@ -8,6 +8,7 @@ import {
     canEvaluateStation,
     canTeachStation,
     getLatestStationEvaluation,
+    getStatusLabel,
     isMasteryLocked,
     scoreToStatus,
     type EvaluationRecord,
@@ -225,7 +226,7 @@ export default function EvaluationForm() {
                             <p>
                                 {UserManager.isDirector
                                     ? 'As Director, you may evaluate any station.'
-                                    : `Your current status for this station is ${scoreToStatus(getLatestStationEvaluation(myEvaluations, currentStationId)?.score)}.`}
+                                    : `Your current status for this station is ${getStatusLabel(scoreToStatus(getLatestStationEvaluation(myEvaluations, currentStationId)?.score))}.`}
                             </p>
                         </div>
 
