@@ -707,3 +707,24 @@ button {
   font-weight: 500;
   margin-bottom: 5px;
 }
+
+.no-stations-message {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-sh);
+}
+
+.criteria-summary {
+  margin: 16px 0;
+}
+
+.criteria-summary ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.mastery-note {
+  color: var(--text-sh);
+  font-size: 14px;
+  font-style: italic;
+}

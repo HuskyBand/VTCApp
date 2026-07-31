@@ -88,10 +88,12 @@ export default function HomePage() {
         if (UserManager.isTA || UserManager.isDirector || PermissionManager.canViewAdmin()) {
             return true;
         }
-        if (stationId <= 1) {
+        const sortedStations = [...stations].sort((a, b) => a.id - b.id);
+        const index = sortedStations.findIndex((s) => s.id === stationId);
+        if (index <= 0) {
             return true;
         }
-        return hasPassedStation(evaluations, stationId - 1);
+        return hasPassedStation(evaluations, sortedStations[index - 1].id);
     };
 
     return (

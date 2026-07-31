@@ -165,10 +165,10 @@ export default function StationDetail() {
                             )}
                         </div>
                         <div className="queue-actions">
-                            {atMastery ? (
-                                <p className="mastery-note">You've already reached mastery for this station.</p>
-                            ) : isInQueue() ? (
+                            {isInQueue() ? (
                                 <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
+                            ) : atMastery ? (
+                                <p className="mastery-note">You've already reached mastery for this station.</p>
                             ) : (
                                 <button className="button primary" onClick={joinQueue}>Join Queue</button>
                             )}

@@ -5,13 +5,25 @@ const LAST_SEEN_KEY = 'last_seen_broadcast_id';
 
 export default function BroadcastPopup() {
     const [broadcast, setBroadcast] = useState<{ id: number; title: string; message: string; senderName: string } | null>(null);
+    const hasStoredLastSeen = localStorage.getItem(LAST_SEEN_KEY) !== null;
     const lastSeenId = useRef<number>(Number(localStorage.getItem(LAST_SEEN_KEY) ?? 0));
+    const hasBaselined = useRef<boolean>(hasStoredLastSeen);
 
     useEffect(() => {
         const check = async () => {
             if (!UserManager.isLoggedIn) return;
             const notifications = await UserManager.getNotifications();
-            const latestBroadcast = notifications.find((n: any) => n.category === 'broadcast');
+            const latestBroadcast = notifications.find((n) => n.category === 'broadcast');
+
+            if (!hasBaselined.current) {
+                hasBaselined.current = true;
+                if (latestBroadcast) {
+                    lastSeenId.current = latestBroadcast.id;
+                    localStorage.setItem(LAST_SEEN_KEY, String(latestBroadcast.id));
+                }
+                return;
+            }
+
             if (latestBroadcast && latestBroadcast.id > lastSeenId.current) {
                 setBroadcast(latestBroadcast);
             }
