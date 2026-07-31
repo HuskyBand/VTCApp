@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams, useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
 import { useState, useEffect } from "react";
 import UserManager from "@client/stores/UserManager";
@@ -29,6 +29,7 @@ const levelScore: Record<CriterionLevel, number> = {
 
 export default function EvaluationForm() {
     const { stationId } = useParams();
+    const nav = useNavigate();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
@@ -175,13 +176,8 @@ export default function EvaluationForm() {
             );
 
             if (success) {
-                setMessage('Evaluation submitted successfully! Results sent to student.');
-                setSelectedUser(null);
-                setComments('');
-                setFeedbackChecked(new Set());
-                setCriteria((prev) => prev.map((c) => ({ ...c, level: 'developing' })));
-                await loadMyEvaluations();
-                setTargetEvaluations([]);
+                nav('/evaluate');
+                return;
             } else {
                 setMessage('Failed to submit evaluation. Please try again.');
             }
