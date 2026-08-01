@@ -10,8 +10,11 @@ import { Database } from './database';
 const db = new Database();
 
 let routes = new Hono();
+let corsHandler = cors({
+    allowMethods: ['GET', 'PUSH', 'PUT', 'DELETE']
+});
 
-routes.use(cors());
+routes.use(corsHandler);
 
 configureRoutes(routes, db);
 
@@ -20,7 +23,7 @@ app.route('/', routes);
 app.route('/v1', routes);
 
 app.use(logger());
-app.use(cors());
+app.use(corsHandler);
 app.notFound((ctx) => {
     return ctx.json({
         message: "It's go big or go home... and you couldn't go big.",
