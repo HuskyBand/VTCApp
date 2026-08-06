@@ -249,6 +249,54 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json({ success: true });
     });
 
+    routes.put('/users/:userId/stations/:stationId/role', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const targetUserId = parseInt(c.req.param('userId'));
+        const stationId = parseInt(c.req.param('stationId'));
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const { role } = await c.req.json() as { role: string };
+        if (role !== 'participant' && role !== 'instructor' && role !== 'evaluator') {
+            return c.json({ error: 'role must be participant, instructor, or evaluator' }, 400);
+        }
+
+        if (role === 'participant') {
+            await db.deleteStationRoleOverride(targetUserId, stationId);
+        } else {
+            await db.setStationRoleOverride(targetUserId, stationId, role);
+        }
+
+        return c.json({ success: true });
+    });
+
+    routes.get('/users/:userId/stations/roles', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const targetUserId = parseInt(c.req.param('userId'));
+        const testPermission = c.req.header('X-Test-Permission');
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const targetUser = await db.getUserById(targetUserId);
+        if (!targetUser) {
+            return c.json({ error: 'User not found' }, 404);
+        }
+
+        const stations = await db.getAllStations();
+        const roles = await Promise.all(stations.map(async (station) => ({
+            stationId: station.id!,
+            stationName: station.name,
+            role: await resolveStationRole(db, targetUser, station.id!)
+        })));
+
+        return c.json(roles);
+    });
+
     routes.post('/evaluations', authMiddleware, async (c) => {
         const evaluatorId = (c as any).userId as number;
         const body = await c.req.json() as {
