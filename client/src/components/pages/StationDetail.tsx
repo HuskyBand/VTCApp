@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
-import { isMasteryLocked } from "@client/utils/evaluationHelpers";
+import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
 
 export default function StationDetail() {
     const { id } = useParams();
@@ -52,6 +52,9 @@ export default function StationDetail() {
             const queueItems = await UserManager.getStationQueue(stationId);
             setQueue(queueItems);
             setQueueError('');
+            if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                setQueueMessage('');
+            }
         } catch (err) {
             setQueueError('Failed to load queue status.');
         }
@@ -103,29 +106,20 @@ export default function StationDetail() {
         }
     };
 
-    const getLatestStatus = () => {
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const getLatestStatus = (): EvaluationStatus => {
         if (evaluations.length === 0) return 'not_started';
-        const latest = evaluations[0]; // Assuming sorted by date descending
-        if (latest.score >= 80) return 'completed';
-        if (latest.score >= 50) return 'in_progress';
-        return 'not_started';
+        return scoreToStatus(evaluations[0].score); // evaluations[0] is the latest, sorted by date descending
     };
 
-    const getStatusIndicator = (status: string) => {
+    const getStatusIndicator = (status: EvaluationStatus) => {
         switch (status) {
-            case 'completed': return '🟢';
-            case 'in_progress': return '🟡';
+            case 'mastery': return '🟢';
+            case 'satisfactory': return '🟡';
+            case 'developing': return '🟠';
             case 'not_started': return '🔴';
             default: return '🔴';
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'completed': return 'Completed';
-            case 'in_progress': return 'In Progress';
-            case 'not_started': return 'Not Yet Started';
-            default: return 'Not Yet Started';
         }
     };
 
@@ -210,7 +204,7 @@ export default function StationDetail() {
                                                 <h4>Criteria Results</h4>
                                                 <ul>
                                                     {evaluations[0].criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -262,7 +256,7 @@ export default function StationDetail() {
                                                 <h4>Criteria Results</h4>
                                                 <ul>
                                                     {evaluation.criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
                                                     ))}
                                                 </ul>
                                             </div>

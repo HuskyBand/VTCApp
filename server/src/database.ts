@@ -386,7 +386,7 @@ export class Database {
     getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; category: string; createdAt: string }>> {
         return new Promise((resolve, reject) => {
             const sql = isDirector
-                ? "SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE category != 'queue' ORDER BY id DESC"
+                ? "SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE category = 'broadcast' ORDER BY id DESC"
                 : 'SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY id DESC';
             const params = isDirector ? [] : [userId];
 

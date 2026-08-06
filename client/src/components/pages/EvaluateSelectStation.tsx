@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import PermissionManager from "@client/stores/PermissionManager";
@@ -17,6 +17,7 @@ type Station = {
 
 export default function EvaluateSelectStation() {
     const nav = useNavigate();
+    const [searchParams] = useSearchParams();
     const [selectedStation, setSelectedStation] = useState<number | null>(null);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
     const [stations, setStations] = useState<Station[]>([]);
@@ -41,6 +42,10 @@ export default function EvaluateSelectStation() {
                 const result = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
                 setEvaluations(result);
                 const stationList = await UserManager.getStations();
+                if (stationList === null) {
+                    setError('Unable to load stations. Check your connection and try again.');
+                    return;
+                }
                 setStations(stationList);
             } catch {
                 setError('Unable to load your station progress.');
@@ -48,6 +53,19 @@ export default function EvaluateSelectStation() {
         };
         load();
     }, []);
+
+    // Auto-select the station we were just redirected from after submitting an evaluation.
+    useEffect(() => {
+        if (selectedStation || stations.length === 0) return;
+        const redirectStationId = Number(searchParams.get('stationId'));
+        if (!redirectStationId) return;
+        const allIds = sortedStationIds();
+        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, redirectStationId, allIds);
+        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, redirectStationId, allIds);
+        if ((canEvaluate || canTeach) && stations.some((s) => s.id === redirectStationId)) {
+            setSelectedStation(redirectStationId);
+        }
+    }, [stations, evaluations, searchParams]);
 
     useEffect(() => {
         const loadQueue = async () => {

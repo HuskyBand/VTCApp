@@ -8,8 +8,6 @@ import {
     type EvaluationRecord,
 } from "@client/utils/evaluationHelpers";
 
-const stations = [1, 2, 3, 4, 5, 6];
-
 export default function BottomNav() {
     const canViewAdmin = PermissionManager.canViewAdmin();
     const canEvaluate = PermissionManager.canEvaluate();
@@ -20,9 +18,10 @@ export default function BottomNav() {
             if (!UserManager.isLoggedIn || canEvaluate) return;
             try {
                 const evaluations = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
-                const accessible = stations.some((stationId) =>
-                    canEvaluateStation(evaluations as EvaluationRecord[], stationId) ||
-                    canTeachStation(evaluations as EvaluationRecord[], stationId)
+                const stations = await UserManager.getStations();
+                const accessible = (stations ?? []).some((station) =>
+                    canEvaluateStation(evaluations as EvaluationRecord[], station.id) ||
+                    canTeachStation(evaluations as EvaluationRecord[], station.id)
                 );
                 setHasProgressAccess(accessible);
             } catch {

@@ -37,6 +37,10 @@ export default function StationManagement() {
     const loadStations = async () => {
         try {
             const data = await UserManager.getStations();
+            if (data === null) {
+                setError('Failed to load stations. Check your connection and try again.');
+                return;
+            }
             setStations(data);
         } catch {
             setError('Failed to load stations.');

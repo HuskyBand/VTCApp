@@ -20,6 +20,7 @@ const getStatusIndicator = (status: string) => {
     switch (status) {
         case 'completed': return '🟢';
         case 'in_progress': return '🟡';
+        case 'developing': return '🟠';
         case 'not_started': return '🔴';
         default: return '🔴';
     }
@@ -29,6 +30,7 @@ const getStatusLabel = (status: string) => {
     switch (status) {
         case 'completed': return 'Completed';
         case 'in_progress': return 'In Progress';
+        case 'developing': return 'Developing';
         case 'not_started': return 'Not Yet Started';
         default: return 'Not Yet Started';
     }
@@ -42,6 +44,7 @@ export default function HomePage() {
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
     const [stations, setStations] = useState<Station[]>([]);
+    const [stationsError, setStationsError] = useState(false);
 
     useEffect(() => {
         loadEvaluations();
@@ -51,6 +54,11 @@ export default function HomePage() {
 
     const loadStations = async () => {
         const data = await UserManager.getStations();
+        if (data === null) {
+            setStationsError(true);
+            return;
+        }
+        setStationsError(false);
         setStations(data);
     };
 
@@ -76,11 +84,12 @@ export default function HomePage() {
         setPermission(newPermission);
     };
 
-    const getStationStatus = (stationId: number): 'completed' | 'in_progress' | 'not_started' => {
+    const getStationStatus = (stationId: number): 'completed' | 'in_progress' | 'developing' | 'not_started' => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
         const status = scoreToStatus(latest?.score);
         if (status === 'mastery') return 'completed';
         if (status === 'satisfactory') return 'in_progress';
+        if (status === 'developing') return 'developing';
         return 'not_started';
     };
 
@@ -168,7 +177,13 @@ export default function HomePage() {
                     })()}
 
                     <div className="stations-list">
-                        {stations.length === 0 && (
+                        {stationsError && (
+                            <div className="message error-message">
+                                Couldn't load stations — check your connection.
+                                <button className="button secondary sm" onClick={loadStations} style={{ marginLeft: '0.75rem' }}>Retry</button>
+                            </div>
+                        )}
+                        {!stationsError && stations.length === 0 && (
                             PermissionManager.canViewAdmin() ? (
                                 <p className="no-stations-message">No stations have been set up yet. Add your first station to get started.</p>
                             ) : (
@@ -191,7 +206,9 @@ export default function HomePage() {
                                             {unlocked ? getStatusLabel(status) : 'Locked until previous station is proficient'}
                                         </div>
                                     </div>
-                                    <div className="edit-icon">{unlocked ? '✏️' : '🔒'}</div>
+                                    <div className="edit-icon">
+                                        {!unlocked ? '🔒' : UserManager.isDirector ? '✏️' : '▶️'}
+                                    </div>
                                 </div>
                             );
                         })}

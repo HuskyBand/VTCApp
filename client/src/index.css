@@ -266,6 +266,12 @@ button {
   color: var(--text-h);
 }
 
+.field-hint {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
 .criteria-form-list {
   margin: 20px 0;
 }

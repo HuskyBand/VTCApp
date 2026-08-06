@@ -176,7 +176,7 @@ export default function EvaluationForm() {
             );
 
             if (success) {
-                nav('/evaluate');
+                nav(`/evaluate?stationId=${currentStationId}`);
                 return;
             } else {
                 setMessage('Failed to submit evaluation. Please try again.');
