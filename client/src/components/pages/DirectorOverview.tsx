@@ -44,6 +44,7 @@ export default function DirectorOverview() {
     }, []);
 
     useEffect(() => {
+        setRoleUpdateError('');
         if (!selectedUserId) {
             setSelectedUserRoles([]);
             return;
