@@ -1,20 +1,20 @@
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import { PermFlags, type User } from '@api/user/User';
 import React from 'react';
 import { useNavigate } from 'react-router';
 
 const permissionLabel = (flags: number) => {
-    switch (flags & PermFlags.LevelMask) {
-        case PermFlags.IsDirector:
-            return 'Director';
-        case PermFlags.IsAssistant:
-            return 'Assistant';
-        case PermFlags.IsLeadership:
-            return 'Leadership';
-        default:
-            return 'Band Member';
-    }
+    const level = flags & PermFlags.LevelMask;
+    if (level === PermFlags.IsDirector) return 'Director';
+    if (level === PermFlags.IsLeadership || level === PermFlags.IsAssistant) return 'Elevated';
+    return 'Band Member';
+};
+
+// IsAssistant is a legacy value: existing users at that raw permFlags value still
+// read as Elevated, but this page only ever writes IsLeadership going forward.
+const normalizedLevel = (flags: number) => {
+    const level = flags & PermFlags.LevelMask;
+    return level === PermFlags.IsAssistant ? PermFlags.IsLeadership : level;
 };
 
 export default function PermissionManagementPage() {
@@ -23,7 +23,7 @@ export default function PermissionManagementPage() {
     const [error, setError] = React.useState('');
 
     React.useEffect(() => {
-        if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) {
+        if (!UserManager.isLoggedIn || !UserManager.isDirector) {
             nav('/');
             return;
         }
@@ -72,12 +72,11 @@ export default function PermissionManagementPage() {
                             <td>{permissionLabel(user.permFlags)}</td>
                             <td>
                                 <select
-                                    value={user.permFlags & PermFlags.LevelMask}
+                                    value={normalizedLevel(user.permFlags)}
                                     onChange={(event) => updatePermission(user.id!, parseInt(event.target.value))}
                                 >
                                     <option value={PermFlags.IsBandMember}>Band Member</option>
-                                    <option value={PermFlags.IsLeadership}>Leadership</option>
-                                    <option value={PermFlags.IsAssistant}>Assistant</option>
+                                    <option value={PermFlags.IsLeadership}>Elevated</option>
                                     <option value={PermFlags.IsDirector}>Director</option>
                                 </select>
                             </td>
