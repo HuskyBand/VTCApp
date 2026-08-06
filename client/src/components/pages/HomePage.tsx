@@ -8,6 +8,7 @@ import {
     hasPassedStation,
     scoreToStatus,
     type EvaluationRecord,
+    type EvaluationStatus,
 } from '@client/utils/evaluationHelpers';
 
 type Station = {
@@ -16,20 +17,20 @@ type Station = {
     criteria: string[];
 };
 
-const getStatusIndicator = (status: string) => {
+const getStatusIndicator = (status: EvaluationStatus) => {
     switch (status) {
-        case 'completed': return '🟢';
-        case 'in_progress': return '🟡';
+        case 'mastery': return '🟢';
+        case 'satisfactory': return '🟡';
         case 'developing': return '🟠';
         case 'not_started': return '🔴';
         default: return '🔴';
     }
 };
 
-const getStatusLabel = (status: string) => {
+const getStatusLabel = (status: EvaluationStatus) => {
     switch (status) {
-        case 'completed': return 'Completed';
-        case 'in_progress': return 'In Progress';
+        case 'mastery': return 'Completed';
+        case 'satisfactory': return 'In Progress';
         case 'developing': return 'Developing';
         case 'not_started': return 'Not Yet Started';
         default: return 'Not Yet Started';
@@ -84,13 +85,9 @@ export default function HomePage() {
         setPermission(newPermission);
     };
 
-    const getStationStatus = (stationId: number): 'completed' | 'in_progress' | 'developing' | 'not_started' => {
+    const getStationStatus = (stationId: number): EvaluationStatus => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
-        const status = scoreToStatus(latest?.score);
-        if (status === 'mastery') return 'completed';
-        if (status === 'satisfactory') return 'in_progress';
-        if (status === 'developing') return 'developing';
-        return 'not_started';
+        return scoreToStatus(latest?.score);
     };
 
     const isStationUnlocked = (stationId: number): boolean => {
