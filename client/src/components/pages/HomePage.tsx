@@ -216,7 +216,7 @@ export default function HomePage() {
                     {PermissionManager.canViewAdmin() && (
                         <button className="new-station-btn" onClick={() => nav('/admin/stations')}>+ Manage Stations</button>
                     )}
-                    <p>Press the button to do a fake logout!</p>
+                    <p>Press the button to Logout!</p>
                     <button onClick={() => {
                         nav('/logout');
                     }}>Logout</button>
