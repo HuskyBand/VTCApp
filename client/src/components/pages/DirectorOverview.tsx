@@ -62,6 +62,15 @@ export default function DirectorOverview() {
         }
         const updated = await UserManager.getUserStationRoles(selectedUserId);
         setSelectedUserRoles(updated);
+
+        const resolved = updated.find((entry) => entry.stationId === stationId);
+        if (resolved && resolved.role !== role) {
+            setRoleUpdateError(
+                `This member's scores at ${resolved.stationName} already grant them ${resolved.role}; overrides can only raise a role, not lower it below what they've earned.`
+            );
+        } else {
+            setRoleUpdateError('');
+        }
     };
 
     const startSSE = () => {

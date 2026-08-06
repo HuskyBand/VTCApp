@@ -108,6 +108,8 @@ export class Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 criteria TEXT NOT NULL, -- JSON array of criteria
+                feedbackItems TEXT NOT NULL DEFAULT '[]',
+                instructorNotes TEXT NOT NULL DEFAULT '[]',
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);

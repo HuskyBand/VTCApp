@@ -8,6 +8,8 @@ type StationInfo = {
     name: string;
     criteria: string[];
     feedbackItems: string[];
+    role?: string;
+    instructorNotes?: string[];
 };
 
 export default function StationFeedbackView() {
@@ -32,8 +34,8 @@ export default function StationFeedbackView() {
     }, []);
 
     const loadStations = () => {
-        UserManager.getStationsFeedback()
-            .then(setStations)
+        UserManager.getStations()
+            .then((s) => setStations(s ?? []))
             .catch(() => setError('Failed to load station information.'));
     };
 

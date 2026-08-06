@@ -439,20 +439,6 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(evaluations);
     });
 
-    // Instructor-accessible endpoint — MUST be before /stations/:id to avoid being swallowed by the param route
-    routes.get('/stations/feedback', authMiddleware, async (c) => {
-        const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
-        const currentUser = await db.getUserById(currentUserId);
-        const canView = currentUser && (
-            currentUser.permFlags >= PermFlags.IsLeadership ||
-            isElevatedOverride(testPermission ?? undefined)
-        );
-        if (!canView) return c.json({ error: 'Forbidden' }, 403);
-        const stations = await db.getAllStations();
-        return c.json(stations.map(s => ({ id: s.id, name: s.name, criteria: s.criteria, feedbackItems: s.feedbackItems })));
-    });
-
     // Public (any authenticated user) station lookup — role/instructorNotes are per-caller
     routes.get('/stations/:id', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
@@ -462,9 +448,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
+        const testPermission = c.req.header('X-Test-Permission');
         const station = await db.getStationById(stationId);
         const base = station ?? { id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [], instructorNotes: [] };
-        const role = await resolveStationRole(db, currentUser, stationId);
+        const role = await resolveStationRole(db, currentUser, stationId, testPermission ?? undefined);
 
         return c.json({
             id: base.id,
@@ -483,9 +470,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
+        const testPermission = c.req.header('X-Test-Permission');
         const stations = await db.getAllStations();
         const withRoles = await Promise.all(stations.map(async (station) => {
-            const role = await resolveStationRole(db, currentUser, station.id!);
+            const role = await resolveStationRole(db, currentUser, station.id!, testPermission ?? undefined);
             return {
                 id: station.id,
                 name: station.name,

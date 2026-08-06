@@ -10,8 +10,13 @@ const LAST_STATION_ID = 6;
 export async function resolveStationRole(
     db: Database,
     user: User & { id: number },
-    stationId: number
+    stationId: number,
+    overrideTier?: string
 ): Promise<StationRole> {
+    if (overrideTier === 'elevated' || overrideTier === 'dr_jahlas') {
+        return 'evaluator';
+    }
+
     if (
         user.permFlags === PermFlags.IsDirector ||
         user.permFlags === PermFlags.IsLeadership ||

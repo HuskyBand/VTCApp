@@ -238,12 +238,6 @@ class UserManager {
         return response.body;
     }
 
-    async getStationsFeedback(): Promise<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>> {
-        const response = await http.get<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>>('/stations/feedback');
-        if (!response.ok || !response.body) return [];
-        return response.body;
-    }
-
     async submitEvaluation(
         userId: number,
         stationId: number,
