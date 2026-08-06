@@ -88,6 +88,9 @@ export class Database {
             if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
                 this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
             }
+            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'category')) {
+                this.db.run("ALTER TABLE notifications ADD COLUMN category TEXT NOT NULL DEFAULT 'general'");
+            }
         });
 
         this.db.all('PRAGMA table_info(stations)', [], (err, rows: any[]) => {
@@ -113,6 +116,7 @@ export class Database {
                 senderId INTEGER NOT NULL,
                 senderName TEXT NOT NULL,
                 recipientId INTEGER,
+                category TEXT NOT NULL DEFAULT 'general',
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (senderId) REFERENCES users(id),
                 FOREIGN KEY (recipientId) REFERENCES users(id)
@@ -132,24 +136,6 @@ export class Database {
             )
         `);
 
-        // Seed the 6 default stations if none exist yet
-        this.db.get('SELECT COUNT(*) as count FROM stations', [], (err, row: any) => {
-            if (err || (row?.count ?? 0) > 0) return;
-            const defaults = [
-                { id: 1, name: 'Station 1' },
-                { id: 2, name: 'Station 2' },
-                { id: 3, name: 'Station 3' },
-                { id: 4, name: 'Station 4' },
-                { id: 5, name: 'Station 5' },
-                { id: 6, name: 'Station 6' },
-            ];
-            for (const s of defaults) {
-                this.db.run(
-                    "INSERT OR IGNORE INTO stations (id, name, criteria, feedbackItems) VALUES (?, ?, '[]', '[]')",
-                    [s.id, s.name]
-                );
-            }
-        });
     }
 
     async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User & { id: number }> {
@@ -368,11 +354,11 @@ export class Database {
         });
     }
 
-    createNotification(notification: { title: string; message: string; senderId: number; senderName: string; recipientId?: number | null }): Promise<{ id: number }> {
+    createNotification(notification: { title: string; message: string; senderId: number; senderName: string; recipientId?: number | null; category?: 'general' | 'queue' | 'broadcast' }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
             const sql = `
-                INSERT INTO notifications (title, message, senderId, senderName, recipientId)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO notifications (title, message, senderId, senderName, recipientId, category)
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
 
             this.db.run(
@@ -382,7 +368,8 @@ export class Database {
                     notification.message,
                     notification.senderId,
                     notification.senderName,
-                    notification.recipientId ?? null
+                    notification.recipientId ?? null,
+                    notification.category ?? 'general'
                 ],
                 function(err) {
                     if (err) {
@@ -396,11 +383,11 @@ export class Database {
         });
     }
 
-    getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+    getNotificationsForUser(userId: number, isDirector: boolean): Promise<Array<{ id: number; title: string; message: string; senderName: string; category: string; createdAt: string }>> {
         return new Promise((resolve, reject) => {
             const sql = isDirector
-                ? 'SELECT id, title, message, senderName, createdAt FROM notifications ORDER BY createdAt DESC'
-                : 'SELECT id, title, message, senderName, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY createdAt DESC';
+                ? "SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE category = 'broadcast' ORDER BY id DESC"
+                : 'SELECT id, title, message, senderName, category, createdAt FROM notifications WHERE recipientId IS NULL OR recipientId = ? ORDER BY id DESC';
             const params = isDirector ? [] : [userId];
 
             this.db.all(sql, params, (err, rows) => {
@@ -409,7 +396,7 @@ export class Database {
                     return;
                 }
 
-                resolve((rows as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>) || []);
+                resolve((rows as Array<{ id: number; title: string; message: string; senderName: string; category: string; createdAt: string }>) || []);
             });
         });
     }

@@ -43,7 +43,8 @@ export const hasPassedStation = (evaluations: EvaluationRecord[], stationId: num
 
 export const canEvaluateStation = (
     evaluations: EvaluationRecord[],
-    stationId: number
+    stationId: number,
+    allStationIds?: number[]
 ): boolean => {
     const current = getLatestStationEvaluation(evaluations, stationId);
     const currentStatus = scoreToStatus(current?.score);
@@ -52,16 +53,22 @@ export const canEvaluateStation = (
         return false;
     }
 
-    if (stationId >= 6) {
+    if (!allStationIds) {
         return true;
     }
 
-    return hasPassedStation(evaluations, stationId + 1);
+    const index = allStationIds.indexOf(stationId);
+    if (index === -1 || index === allStationIds.length - 1) {
+        return true;
+    }
+
+    return hasPassedStation(evaluations, allStationIds[index + 1]);
 };
 
 export const canTeachStation = (
     evaluations: EvaluationRecord[],
-    stationId: number
+    stationId: number,
+    allStationIds?: number[]
 ): boolean => {
     const current = getLatestStationEvaluation(evaluations, stationId);
     const currentStatus = scoreToStatus(current?.score);
@@ -70,14 +77,28 @@ export const canTeachStation = (
         return false;
     }
 
-    if (stationId >= 6) {
+    if (!allStationIds) {
         return true;
     }
 
-    return hasPassedStation(evaluations, stationId + 1);
+    const index = allStationIds.indexOf(stationId);
+    if (index === -1 || index === allStationIds.length - 1) {
+        return true;
+    }
+
+    return hasPassedStation(evaluations, allStationIds[index + 1]);
 };
 
 export const isMasteryLocked = (evaluations: EvaluationRecord[], stationId: number): boolean => {
     const latest = getLatestStationEvaluation(evaluations, stationId);
     return scoreToStatus(latest?.score) === 'mastery';
 };
+
+const statusLabels: Record<EvaluationStatus, string> = {
+    not_started: 'Not Started',
+    developing: 'Developing',
+    satisfactory: 'Satisfactory',
+    mastery: 'Mastery',
+};
+
+export const getStatusLabel = (status: EvaluationStatus): string => statusLabels[status];

@@ -41,7 +41,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
             const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
             return c.json({ token, user } as LoginResponse);
         } catch (error) {
-            return c.json({ error: 'Registration failed' }, 400);
+            const message = error instanceof Error && error.message.includes('UNIQUE constraint failed')
+                ? 'Unable to register; email or username is already in use.'
+                : 'Registration failed';
+            return c.json({ error: message }, 400);
         }
     });
 
@@ -94,7 +97,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
     const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
 
     const isDirectorOverride = (overridePermission?: string) => overridePermission === 'dr_jahlas';
-    const isElevatedOverride = (overridePermission?: string) => overridePermission === 'evaluator' || overridePermission === 'elevated' || overridePermission === 'dr_jahlas';
+    const isElevatedOverride = (overridePermission?: string) => overridePermission === 'evaluator' || overridePermission === 'elevated' || overridePermission === 'dr_jahlas' || overridePermission === 'instructor';
 
     const canSubmitEvaluation = async (currentUserId: number, stationId: number, overridePermission?: string): Promise<boolean> => {
         const currentUser = await db.getUserById(currentUserId);
@@ -139,13 +142,15 @@ export default function configureRoutes(routes: Hono, db: Database) {
             message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
             senderId,
             senderName,
-            recipientId: first.userId
+            recipientId: first.userId,
+            category: 'queue'
         });
     };
 
     const buildOverview = async () => {
         const users = await db.getAllUsers();
         const evaluations = await db.getAllEvaluations();
+        const allStations = await db.getAllStations();
 
         const latestByUserStation = new Map<string, { score?: number }>();
         evaluations.forEach((evaluation) => {
@@ -155,7 +160,9 @@ export default function configureRoutes(routes: Hono, db: Database) {
             }
         });
 
-        const stations = [1, 2, 3, 4, 5, 6].map((stationId) => {
+        const stations = allStations.map((station, index) => {
+            const stationId = station.id!;
+            const nextStationId = allStations[index + 1]?.id;
             let mastery = 0;
             let proficient = 0;
             let developing = 0;
@@ -164,7 +171,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
             users.forEach((user) => {
                 const key = `${user.id}:${stationId}`;
-                const nextKey = `${user.id}:${stationId + 1}`;
+                const nextKey = nextStationId !== undefined ? `${user.id}:${nextStationId}` : null;
                 const latest = latestByUserStation.get(key);
 
                 // Count progress level
@@ -181,8 +188,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 // Count evaluators: elevated permission OR mastery here + passed next
                 const isElevated = (user.permFlags ?? 0) >= PermFlags.IsLeadership;
                 const hasCurrentMastery = isMastery(latest?.score);
-                const nextScore = stationId >= 6 ? 100 : latestByUserStation.get(nextKey)?.score;
-                const hasNextPass = stationId >= 6 || hasPassed(nextScore);
+                const nextScore = nextKey === null ? 100 : latestByUserStation.get(nextKey)?.score;
+                const hasNextPass = nextKey === null || hasPassed(nextScore);
                 if (isElevated || (hasCurrentMastery && hasNextPass)) {
                     evaluatorCount += 1;
                 }
@@ -190,7 +197,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
             return {
                 stationId,
-                name: `Station ${stationId}`,
+                name: station.name,
                 mastery,
                 proficient,
                 developing,
@@ -202,8 +209,25 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
         const notifications = await db.getNotificationsForUser(0, true);
 
+        const usersById = new Map(users.map((u) => [u.id, u]));
+        const stationsById = new Map(allStations.map((s) => [s.id, s]));
+        const activity = evaluations.slice(0, 25).map((evaluation) => {
+            const evaluator = usersById.get(evaluation.evaluatorId);
+            const evaluated = usersById.get(evaluation.userId);
+            const station = stationsById.get(evaluation.stationId);
+            return {
+                id: evaluation.id,
+                evaluatorName: evaluator ? `${evaluator.firstName} ${evaluator.lastName}` : 'Unknown',
+                evaluatedName: evaluated ? `${evaluated.firstName} ${evaluated.lastName}` : 'Unknown',
+                stationName: station?.name ?? `Station ${evaluation.stationId}`,
+                score: evaluation.score,
+                createdAt: evaluation.createdAt
+            };
+        });
+
         return {
             stations,
+            activity,
             totalUsers: users.length,
             totalNotifications: notifications.length
         };
@@ -241,8 +265,9 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.put('/users/:id/permissions', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('id'));
+        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(userId);
-        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
+        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
             return c.json({ error: 'Forbidden' }, 403);
         }
         const { permFlags } = await c.req.json() as { permFlags: number };
@@ -335,7 +360,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
             title: body.title,
             message: body.message,
             senderId: currentUserId,
-            senderName: `${currentUser.firstName} ${currentUser.lastName}`
+            senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+            category: 'broadcast'
         });
 
         // Push broadcast to all connected SSE clients
@@ -415,15 +441,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(station);
     });
 
-    // Station management routes (director only)
     routes.get('/stations', authMiddleware, async (c) => {
-        const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
-        const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
-            return c.json({ error: 'Forbidden' }, 403);
-        }
-
         const stations = await db.getAllStations();
         return c.json(stations);
     });
@@ -456,6 +474,11 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
+        const latestEvaluation = await db.getLatestEvaluationForUserStation(currentUserId, stationId);
+        if (latestEvaluation && latestEvaluation.score !== undefined && latestEvaluation.score >= 80) {
+            return c.json({ error: 'You have already reached mastery for this station and cannot join its queue.' }, 400);
+        }
+
         const existing = await db.getQueueEntry(stationId, currentUserId);
         if (existing) {
             return c.json({ success: true, message: 'Already in queue.' });
@@ -479,7 +502,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                     message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
                     senderId: currentUserId,
                     senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-                    recipientId: currentUserId
+                    recipientId: currentUserId,
+                    category: 'queue'
                 });
             } catch (notificationError) {
                 console.error('Queue notification failed after join:', notificationError);
@@ -534,7 +558,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 message: `${currentUser.firstName} ${currentUser.lastName} is ready to evaluate you for Station ${stationId}. Head over now!`,
                 senderId: currentUserId,
                 senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-                recipientId: removedEntry.userId
+                recipientId: removedEntry.userId,
+                category: 'queue' as const
             };
             await db.createNotification(notif);
             // Push real-time to the specific student

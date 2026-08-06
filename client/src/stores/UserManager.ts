@@ -8,6 +8,7 @@ import http from '@client/http/HttpClient';
 class UserManager {
     private _authToken: string | null = null;
     private _user: User | null = null;
+    private handlingSessionExpiry = false;
 
     private safeGetAuthToken = (): string | null => {
         return this._authToken;
@@ -68,7 +69,18 @@ class UserManager {
 
     constructor() {
         http.tokenProvider = this.safeGetAuthToken;
+        http.onUnauthorized = this.handleSessionExpired;
         this.loadFromStorage();
+    }
+
+    /** Clears the stale session and sends the user back to login after their token expires/becomes invalid. */
+    private handleSessionExpired = (): void => {
+        if (this.handlingSessionExpiry || !this.isLoggedIn) {
+            return;
+        }
+        this.handlingSessionExpiry = true;
+        this.clear();
+        window.location.href = '/login';
     }
 
     /** Checks if the client is logged in as a user. */
@@ -127,13 +139,14 @@ class UserManager {
         this.saveToStorage();
     }
 
-    async register(payload: RegisterPayload): Promise<boolean> {
+    async register(payload: RegisterPayload): Promise<{ success: boolean; message?: string }> {
         const response = await http.post<LoginResponse>(Endpoints.auth.register, payload);
         if (!response.ok) {
-            return false;
+            const body = response.body as unknown as { error?: string } | undefined;
+            return { success: false, message: body?.error };
         }
         this.setUser(response.body.token, response.body.user);
-        return true;
+        return { success: true };
     }
 
     async loginWithPassword(username: string, password: string): Promise<boolean> {
@@ -168,12 +181,12 @@ class UserManager {
         return response.body;
     }
 
-    async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>> {
+    async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>> {
         const response = await http.get(Endpoints.notifications.list);
         if (!response.ok || !response.body) {
             return [];
         }
-        return response.body as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>;
+        return response.body as Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>;
     }
 
     async createNotification(title: string, message: string): Promise<boolean> {
@@ -275,10 +288,10 @@ class UserManager {
     }
 
     // Station management
-    async getStations(): Promise<any[]> {
+    async getStations(): Promise<any[] | null> {
         const response = await http.get('/stations');
         if (!response.ok || !response.body) {
-            return [];
+            return null;
         }
         return response.body as any[];
     }

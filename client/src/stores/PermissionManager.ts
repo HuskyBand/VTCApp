@@ -35,7 +35,8 @@ const PermissionManager = {
         return [
             UserPermission.Evaluator,
             UserPermission.DrJahlas,
-            UserPermission.Elevated
+            UserPermission.Elevated,
+            UserPermission.Instructor
         ].includes(currentPermission);
     },
     
