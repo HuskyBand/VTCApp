@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 
 type StationInfo = {
     id: number;
@@ -18,14 +17,25 @@ export default function StationFeedbackView() {
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!UserManager.isLoggedIn || !PermissionManager.canEvaluate()) {
-            nav('/');
-            return;
-        }
+        const check = async () => {
+            if (!UserManager.isLoggedIn) { nav('/'); return; }
+            if (UserManager.isDirector || UserManager.isElevated) {
+                loadStations();
+                return;
+            }
+            const stations = await UserManager.getStations();
+            const hasRoleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'instructor');
+            if (!hasRoleSomewhere) { nav('/'); return; }
+            loadStations();
+        };
+        check();
+    }, []);
+
+    const loadStations = () => {
         UserManager.getStationsFeedback()
             .then(setStations)
             .catch(() => setError('Failed to load station information.'));
-    }, []);
+    };
 
     return (
         <>
