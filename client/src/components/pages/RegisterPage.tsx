@@ -29,7 +29,7 @@ export default function RegisterPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		const success = await UserManager.register({
+		const result = await UserManager.register({
 			username: formData.username,
 			password: formData.password,
 			email: formData.email,
@@ -38,12 +38,12 @@ export default function RegisterPage() {
 			instrument: formData.instrument
 		});
 
-		if (success) {
+		if (result.success) {
 			nav('/');
 			return;
 		}
 
-		setError('Unable to register. Please try again with a unique username and email.');
+		setError(result.message ?? 'Unable to register; email or username is already in use.');
 	};
 
     return (
@@ -65,6 +65,7 @@ export default function RegisterPage() {
                             required
                             className="text-input"
                         />
+                        <p className="field-hint">Your username is permanent and can't be changed later — choose carefully.</p>
                     </div>
                     <div className="form-group">
                         <label htmlFor="email">Email</label>

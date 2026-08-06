@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import PermissionManager from "@client/stores/PermissionManager";
@@ -15,19 +15,12 @@ type Station = {
     name: string;
 };
 
-const stations: Station[] = [
-    { id: 1, name: 'Station 1' },
-    { id: 2, name: 'Station 2' },
-    { id: 3, name: 'Station 3' },
-    { id: 4, name: 'Station 4' },
-    { id: 5, name: 'Station 5' },
-    { id: 6, name: 'Station 6' },
-];
-
 export default function EvaluateSelectStation() {
     const nav = useNavigate();
+    const [searchParams] = useSearchParams();
     const [selectedStation, setSelectedStation] = useState<number | null>(null);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
+    const [stations, setStations] = useState<Station[]>([]);
     const [queue, setQueue] = useState<Array<{ id: number; name: string; userId: number; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
@@ -48,12 +41,31 @@ export default function EvaluateSelectStation() {
             try {
                 const result = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
                 setEvaluations(result);
+                const stationList = await UserManager.getStations();
+                if (stationList === null) {
+                    setError('Unable to load stations. Check your connection and try again.');
+                    return;
+                }
+                setStations(stationList);
             } catch {
                 setError('Unable to load your station progress.');
             }
         };
         load();
     }, []);
+
+    // Auto-select the station we were just redirected from after submitting an evaluation.
+    useEffect(() => {
+        if (selectedStation || stations.length === 0) return;
+        const redirectStationId = Number(searchParams.get('stationId'));
+        if (!redirectStationId) return;
+        const allIds = sortedStationIds();
+        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, redirectStationId, allIds);
+        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, redirectStationId, allIds);
+        if ((canEvaluate || canTeach) && stations.some((s) => s.id === redirectStationId)) {
+            setSelectedStation(redirectStationId);
+        }
+    }, [stations, evaluations, searchParams]);
 
     useEffect(() => {
         const loadQueue = async () => {
@@ -71,6 +83,8 @@ export default function EvaluateSelectStation() {
             }
         };
         loadQueue();
+        const interval = setInterval(loadQueue, 5000);
+        return () => clearInterval(interval);
     }, [selectedStation]);
 
     // Clean up camera on unmount
@@ -144,10 +158,13 @@ export default function EvaluateSelectStation() {
         }
     };
 
+    const sortedStationIds = () => [...stations].sort((a, b) => a.id - b.id).map((s) => s.id);
+
     const handleSelect = () => {
         if (!selectedStation) return;
-        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, selectedStation);
-        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, selectedStation);
+        const allIds = sortedStationIds();
+        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, selectedStation, allIds);
+        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, selectedStation, allIds);
         if (!canEvaluate && !canTeach) {
             setError('You are not yet eligible to evaluate this station. Reach mastery and pass the next station first.');
             return;
@@ -173,8 +190,9 @@ export default function EvaluateSelectStation() {
 
     const handleEvaluateScanned = () => {
         if (!scannedUser || !selectedStation) return;
-        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, selectedStation);
-        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, selectedStation);
+        const allIds = sortedStationIds();
+        const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, selectedStation, allIds);
+        const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, selectedStation, allIds);
         if (!canEvaluate && !canTeach) {
             setScanError('You are not eligible to evaluate this station. Reach mastery and pass the next station first.');
             return;
@@ -191,9 +209,13 @@ export default function EvaluateSelectStation() {
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="stations-select-list">
+                        {stations.length === 0 && (
+                            <p className="no-stations-message">No stations available yet.</p>
+                        )}
                         {stations.map((station) => {
-                            const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, station.id);
-                            const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, station.id);
+                            const allIds = sortedStationIds();
+                            const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, station.id, allIds);
+                            const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, station.id, allIds);
                             return (
                                 <div
                                     key={station.id}
@@ -224,7 +246,7 @@ export default function EvaluateSelectStation() {
                                 {queue.length > 0 && (
                                     <ol>
                                         {queue.map((entry) => (
-                                            <li key={entry.id}>{entry.position}. {entry.name} {entry.position === 1 ? '(next)' : ''}</li>
+                                            <li key={entry.id}>{entry.name} {entry.position === 1 ? '(next)' : ''}</li>
                                         ))}
                                     </ol>
                                 )}

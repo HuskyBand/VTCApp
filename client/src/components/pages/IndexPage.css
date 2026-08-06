@@ -13,7 +13,6 @@
     place-content: center;
     place-items: center;
     flex-grow: 1;
-    min-height: calc(100svh - 40px);
     padding: 40px 24px;
   
     @media (max-width: 1024px) {
@@ -430,6 +429,7 @@ select.text-input {
     border-radius: 6px;
     font-size: 16px;
     background: white;
+    color: #1a1a1a;
     cursor: pointer;
 }
 

@@ -26,47 +26,58 @@ import EvaluateSelectStation from "./components/pages/EvaluateSelectStation";
 import EvaluationForm from "./components/pages/EvaluationForm";
 import StationManagement from "./components/pages/StationManagement";
 import DirectorOverview from "./components/pages/DirectorOverview";
+import RequireAuth from "./components/RequireAuth";
+import BroadcastPopup from "./components/BroadcastPopup";
 
 function App() {
   return (
     <>
+			<BroadcastPopup />
 			<Routes>
 				<Route index element={<IndexPage />} />
 				<Route path="/logout" element={<LogoutPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/register" element={<RegisterPage />} />
 				<Route path="/profile-setup" element={<ProfileSetupPage />} />
-				<Route path="/profile" element={<ProfileSettingsPage />} />
+				<Route path="/profile" element={<RequireAuth><ProfileSettingsPage /></RequireAuth>} />
 				<Route path="/permissions" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
-						<PermissionManagementPage />
-					</ProtectedRoute>
+					<RequireAuth>
+						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+							<PermissionManagementPage />
+						</ProtectedRoute>
+					</RequireAuth>
 				} />
-				<Route path="/station/:id" element={<StationDetail />} />
-				<Route path="/evaluate" element={<EvaluateSelectStation />} />
-				<Route path="/get-evaluated" element={<GetEvaluated />} />
-				<Route path="/station-reference" element={<StationFeedbackView />} />
+				<Route path="/station/:id" element={<RequireAuth><StationDetail /></RequireAuth>} />
+				<Route path="/evaluate" element={<RequireAuth><EvaluateSelectStation /></RequireAuth>} />
+				<Route path="/get-evaluated" element={<RequireAuth><GetEvaluated /></RequireAuth>} />
+				<Route path="/station-reference" element={<RequireAuth><StationFeedbackView /></RequireAuth>} />
 				<Route path="/admin/overview" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
-						<DirectorOverview />
-					</ProtectedRoute>
+					<RequireAuth>
+						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+							<DirectorOverview />
+						</ProtectedRoute>
+					</RequireAuth>
 				} />
 				<Route path="/admin/stations" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
-						<StationManagement />
-					</ProtectedRoute>
+					<RequireAuth>
+						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+							<StationManagement />
+						</ProtectedRoute>
+					</RequireAuth>
 				} />
-				<Route path="/evaluate/station/:stationId" element={<EvaluationForm />} />
-				<Route path="/station/:id/evaluate" element={<StationEvaluationBegin />} />
-				<Route path="/station/:id/starred" element={<StationEvaluationStarred />} />
-				<Route path="/criteria-detail" element={<CriteriaDetail />} />
-				<Route path="/station/:id/search" element={<StationEvaluationSearch />} />
-				<Route path="/evaluate-alt" element={<EvaluateAlt />} />
-				<Route path="/evaluate-alt-expanded" element={<EvaluateAltExpanded />} />
+				<Route path="/evaluate/station/:stationId" element={<RequireAuth><EvaluationForm /></RequireAuth>} />
+				<Route path="/station/:id/evaluate" element={<RequireAuth><StationEvaluationBegin /></RequireAuth>} />
+				<Route path="/station/:id/starred" element={<RequireAuth><StationEvaluationStarred /></RequireAuth>} />
+				<Route path="/criteria-detail" element={<RequireAuth><CriteriaDetail /></RequireAuth>} />
+				<Route path="/station/:id/search" element={<RequireAuth><StationEvaluationSearch /></RequireAuth>} />
+				<Route path="/evaluate-alt" element={<RequireAuth><EvaluateAlt /></RequireAuth>} />
+				<Route path="/evaluate-alt-expanded" element={<RequireAuth><EvaluateAltExpanded /></RequireAuth>} />
 				<Route path="/admin/edit-vtc" element={
-					<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
-						<EditVTC />
-					</ProtectedRoute>
+					<RequireAuth>
+						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+							<EditVTC />
+						</ProtectedRoute>
+					</RequireAuth>
 				} />
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>

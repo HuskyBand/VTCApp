@@ -8,37 +8,30 @@ import {
     hasPassedStation,
     scoreToStatus,
     type EvaluationRecord,
+    type EvaluationStatus,
 } from '@client/utils/evaluationHelpers';
 
 type Station = {
     id: number;
     name: string;
-    status: 'completed' | 'in_progress' | 'not_started';
+    criteria: string[];
 };
 
-const stations: Station[] = [
-    { id: 1, name: 'Station 1', status: 'not_started' },
-    { id: 2, name: 'Station 2', status: 'not_started' },
-    { id: 3, name: 'Station 3', status: 'not_started' },
-    { id: 4, name: 'Station 4', status: 'not_started' },
-    { id: 5, name: 'Station 5', status: 'not_started' },
-    { id: 6, name: 'Station 6', status: 'not_started' },
-    // Add more as needed
-];
-
-const getStatusIndicator = (status: string) => {
+const getStatusIndicator = (status: EvaluationStatus) => {
     switch (status) {
-        case 'completed': return '🟢';
-        case 'in_progress': return '🟡';
+        case 'mastery': return '🟢';
+        case 'satisfactory': return '🟡';
+        case 'developing': return '🟠';
         case 'not_started': return '🔴';
         default: return '🔴';
     }
 };
 
-const getStatusLabel = (status: string) => {
+const getStatusLabel = (status: EvaluationStatus) => {
     switch (status) {
-        case 'completed': return 'Completed';
-        case 'in_progress': return 'In Progress';
+        case 'mastery': return 'Completed';
+        case 'satisfactory': return 'In Progress';
+        case 'developing': return 'Developing';
         case 'not_started': return 'Not Yet Started';
         default: return 'Not Yet Started';
     }
@@ -51,11 +44,24 @@ export default function HomePage() {
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
+    const [stations, setStations] = useState<Station[]>([]);
+    const [stationsError, setStationsError] = useState(false);
 
     useEffect(() => {
         loadEvaluations();
         loadNotifications();
+        loadStations();
     }, []);
+
+    const loadStations = async () => {
+        const data = await UserManager.getStations();
+        if (data === null) {
+            setStationsError(true);
+            return;
+        }
+        setStationsError(false);
+        setStations(data);
+    };
 
     const loadEvaluations = async () => {
         if (UserManager.isLoggedIn) {
@@ -79,19 +85,21 @@ export default function HomePage() {
         setPermission(newPermission);
     };
 
-    const getStationStatus = (stationId: number): 'completed' | 'in_progress' | 'not_started' => {
+    const getStationStatus = (stationId: number): EvaluationStatus => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
-        const status = scoreToStatus(latest?.score);
-        if (status === 'mastery') return 'completed';
-        if (status === 'satisfactory') return 'in_progress';
-        return 'not_started';
+        return scoreToStatus(latest?.score);
     };
 
     const isStationUnlocked = (stationId: number): boolean => {
-        if (stationId <= 1) {
+        if (UserManager.isTA || UserManager.isDirector || PermissionManager.canViewAdmin()) {
             return true;
         }
-        return hasPassedStation(evaluations, stationId - 1);
+        const sortedStations = [...stations].sort((a, b) => a.id - b.id);
+        const index = sortedStations.findIndex((s) => s.id === stationId);
+        if (index <= 0) {
+            return true;
+        }
+        return hasPassedStation(evaluations, sortedStations[index - 1].id);
     };
 
     return (
@@ -166,6 +174,19 @@ export default function HomePage() {
                     })()}
 
                     <div className="stations-list">
+                        {stationsError && (
+                            <div className="message error-message">
+                                Couldn't load stations — check your connection.
+                                <button className="button secondary sm" onClick={loadStations} style={{ marginLeft: '0.75rem' }}>Retry</button>
+                            </div>
+                        )}
+                        {!stationsError && stations.length === 0 && (
+                            PermissionManager.canViewAdmin() ? (
+                                <p className="no-stations-message">No stations have been set up yet. Add your first station to get started.</p>
+                            ) : (
+                                <p className="no-stations-message">No stations have been set up yet. Check back once your director adds some.</p>
+                            )
+                        )}
                         {stations.map(station => {
                             const status = getStationStatus(station.id);
                             const unlocked = isStationUnlocked(station.id);
@@ -182,7 +203,9 @@ export default function HomePage() {
                                             {unlocked ? getStatusLabel(status) : 'Locked until previous station is proficient'}
                                         </div>
                                     </div>
-                                    <div className="edit-icon">{unlocked ? '✏️' : '🔒'}</div>
+                                    <div className="edit-icon">
+                                        {!unlocked ? '🔒' : UserManager.isDirector ? '✏️' : '▶️'}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -190,7 +213,7 @@ export default function HomePage() {
                     {PermissionManager.canViewAdmin() && (
                         <button className="new-station-btn" onClick={() => nav('/admin/stations')}>+ Manage Stations</button>
                     )}
-                    <p>Press the button to do a fake logout!</p>
+                    <p>Press the button to Logout!</p>
                     <button onClick={() => {
                         nav('/logout');
                     }}>Logout</button>

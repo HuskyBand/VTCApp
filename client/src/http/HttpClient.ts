@@ -16,6 +16,7 @@ export class HttpClient {
     private _baseUrl: string;
     private _apiVersion: number;
     private _tokenProvider?: () => string | null;
+    private _onUnauthorized?: () => void;
 
     constructor() {
         this._baseUrl = import.meta.env.VITE_API_URL || DEFAULT_BASE_API_URL;
@@ -24,6 +25,11 @@ export class HttpClient {
 
     set tokenProvider(provider: () => string | null) {
         this._tokenProvider = provider;
+    }
+
+    /** Called when an authenticated request comes back 401 (expired/invalid token). */
+    set onUnauthorized(handler: () => void) {
+        this._onUnauthorized = handler;
     }
 
 	async get<T = unknown>(url: string): Promise<HttpResponse<T>> {
@@ -184,7 +190,10 @@ export class HttpClient {
 
         const response = await this.performXHRRequest<T>(method, fullUrl, headers, serBody);
 
-        // TODO: Retry on certain error codes.
+        // An authenticated request was rejected — our token is expired/invalid.
+        if (response.status === 401 && headers.Authorization) {
+            this._onUnauthorized?.();
+        }
 
         return response;
     }

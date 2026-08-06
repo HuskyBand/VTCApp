@@ -6,14 +6,13 @@ import PermissionManager from '@client/stores/PermissionManager';
 import { scoreToStatus, getLatestStationEvaluation, type EvaluationRecord } from '@client/utils/evaluationHelpers';
 import { type User } from '@api/user/User';
 
-const STATION_IDS = [1, 2, 3, 4, 5, 6];
-
 type StationSummary = {
     stationId: number; name: string;
     mastery: number; proficient: number; developing: number; notStarted: number;
     evaluatorCount: number; totalUsers: number;
 };
-type OverviewData = { stations: StationSummary[]; totalUsers: number; totalNotifications: number };
+type ActivityItem = { id: number; evaluatorName: string; evaluatedName: string; stationName: string; score?: number; createdAt: string };
+type OverviewData = { stations: StationSummary[]; activity: ActivityItem[]; totalUsers: number; totalNotifications: number };
 type NotificationItem = { id: number; title: string; message: string; senderName: string; createdAt: string };
 type LiveNotif = { title: string; message: string; senderName: string; ts: number };
 
@@ -190,13 +189,13 @@ export default function DirectorOverview() {
                         <div className="member-detail-card">
                             <h3>{selectedUser.firstName} {selectedUser.lastName} <span className="member-instrument">— {selectedUser.instrument}</span></h3>
                             <div className="member-stations-grid">
-                                {STATION_IDS.map(sid => {
-                                    const latest = getLatestStationEvaluation(selectedEvals, sid);
+                                {(overview?.stations ?? []).map(s => {
+                                    const latest = getLatestStationEvaluation(selectedEvals, s.stationId);
                                     const status = scoreToStatus(latest?.score);
                                     const labels: Record<string, string> = { mastery: 'Mastery', satisfactory: 'Proficient', developing: 'Developing', not_started: 'Not Started' };
                                     return (
-                                        <div key={sid} className="member-station-chip" style={{ borderColor: STATUS_COLORS[status] ?? STATUS_COLORS.not_started }}>
-                                            <span className="chip-label">Station {sid}</span>
+                                        <div key={s.stationId} className="member-station-chip" style={{ borderColor: STATUS_COLORS[status] ?? STATUS_COLORS.not_started }}>
+                                            <span className="chip-label">{s.name}</span>
                                             <span className="chip-status" style={{ color: STATUS_COLORS[status] ?? STATUS_COLORS.not_started }}>
                                                 {labels[status] ?? 'Not Started'}
                                             </span>
@@ -209,6 +208,21 @@ export default function DirectorOverview() {
                             </div>
                         </div>
                     )}
+
+                    {/* Activity log */}
+                    <h2 className="section-heading">Activity Log</h2>
+                    <div className="activity-list">
+                        {(!overview || overview.activity.length === 0) && <p>No evaluation activity yet.</p>}
+                        {overview?.activity.map((item) => (
+                            <div key={item.id} className="activity-row">
+                                <span><strong>{item.evaluatorName}</strong> evaluated <strong>{item.evaluatedName}</strong> at {item.stationName}</span>
+                                <span className="activity-meta">
+                                    {item.score !== undefined && item.score !== null ? `${item.score}% — ` : ''}
+                                    {new Date(item.createdAt).toLocaleString()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
 
                     {/* Broadcast */}
                     <h2 className="section-heading">Broadcast to All Members</h2>
@@ -271,6 +285,10 @@ export default function DirectorOverview() {
                 .chip-label { font-size: 0.75rem; color: #6b7280; }
                 .chip-status { font-size: 0.8rem; font-weight: 700; }
                 .chip-score { font-size: 0.7rem; color: #9ca3af; }
+
+                .activity-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+                .activity-row { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.65rem 0.9rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; font-size: 0.9rem; }
+                .activity-meta { font-size: 0.75rem; color: #9ca3af; white-space: nowrap; }
 
                 .broadcast-panel { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
                 .broadcast-panel .form-group { margin-bottom: 0.75rem; }

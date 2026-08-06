@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
+import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
 
 export default function StationDetail() {
     const { id } = useParams();
@@ -10,10 +11,12 @@ export default function StationDetail() {
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
+    const [station, setStation] = useState<{ id: number; name: string; criteria: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [] });
 
     useEffect(() => {
         loadEvaluations();
         loadQueue();
+        loadStation();
     }, [id]);
 
     // Refresh evaluations periodically
@@ -33,6 +36,12 @@ export default function StationDetail() {
         }
     };
 
+    const loadStation = async () => {
+        if (!id) return;
+        const data = await UserManager.getStation(Number(id));
+        if (data) setStation(data);
+    };
+
     const loadQueue = async () => {
         if (!id || !UserManager.isLoggedIn) {
             return;
@@ -43,10 +52,15 @@ export default function StationDetail() {
             const queueItems = await UserManager.getStationQueue(stationId);
             setQueue(queueItems);
             setQueueError('');
+            if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                setQueueMessage('');
+            }
         } catch (err) {
             setQueueError('Failed to load queue status.');
         }
     };
+
+    const atMastery = isMasteryLocked(evaluations, Number(id));
 
     const isInQueue = () => queue.some((entry) => entry.userId === UserManager.currentUser.id);
     const queuePosition = () => {
@@ -92,38 +106,22 @@ export default function StationDetail() {
         }
     };
 
-    const getLatestStatus = () => {
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const getLatestStatus = (): EvaluationStatus => {
         if (evaluations.length === 0) return 'not_started';
-        const latest = evaluations[0]; // Assuming sorted by date descending
-        if (latest.score >= 80) return 'completed';
-        if (latest.score >= 50) return 'in_progress';
-        return 'not_started';
+        return scoreToStatus(evaluations[0].score); // evaluations[0] is the latest, sorted by date descending
     };
 
-    const getStatusIndicator = (status: string) => {
+    const getStatusIndicator = (status: EvaluationStatus) => {
         switch (status) {
-            case 'completed': return '🟢';
-            case 'in_progress': return '🟡';
+            case 'mastery': return '🟢';
+            case 'satisfactory': return '🟡';
+            case 'developing': return '🟠';
             case 'not_started': return '🔴';
             default: return '🔴';
         }
     };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'completed': return 'Completed';
-            case 'in_progress': return 'In Progress';
-            case 'not_started': return 'Not Yet Started';
-            default: return 'Not Yet Started';
-        }
-    };
-
-    // Mock data
-    const station = { name: `Station ${id}`, criteria: [
-        { name: 'Criteria 1', items: ['Not yet', 'In progress', 'Satisfactory', 'Exceeding Standard'] },
-        { name: 'Criteria 2', items: ['Not yet', 'In progress', 'Satisfactory', 'Exceeding Standard'] },
-        // Add more
-    ] };
 
     return (
         <>
@@ -137,6 +135,17 @@ export default function StationDetail() {
                             <div className="status-value">{getStatusLabel(getLatestStatus())}</div>
                         </div>
                     </div>
+
+                    {station.criteria.length > 0 && (
+                        <div className="criteria-summary">
+                            <h3>What to strive for</h3>
+                            <ul>
+                                {station.criteria.map((c) => (
+                                    <li key={c}>{c}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     <div className="queue-panel">
                         <h3>Evaluation Queue</h3>
@@ -152,6 +161,8 @@ export default function StationDetail() {
                         <div className="queue-actions">
                             {isInQueue() ? (
                                 <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
+                            ) : atMastery ? (
+                                <p className="mastery-note">You've already reached mastery for this station.</p>
                             ) : (
                                 <button className="button primary" onClick={joinQueue}>Join Queue</button>
                             )}
@@ -193,7 +204,7 @@ export default function StationDetail() {
                                                 <h4>Criteria Results</h4>
                                                 <ul>
                                                     {evaluations[0].criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -245,7 +256,7 @@ export default function StationDetail() {
                                                 <h4>Criteria Results</h4>
                                                 <ul>
                                                     {evaluation.criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${status}`}</li>
+                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -263,23 +274,6 @@ export default function StationDetail() {
                         )
                     )}
 
-                    <div className="criteria-list">
-                        {station.criteria.map((crit, idx) => (
-                            <div key={idx} className="criteria-section">
-                                <h3>{crit.name}</h3>
-                                <ul>
-                                    {crit.items.map((item, i) => <li key={i}>{item}</li>)}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="rubric">
-                        <h3>Rubric</h3>
-                        <ul>
-                            <li>Guidance text 1</li>
-                            <li>Guidance text 2</li>
-                        </ul>
-                    </div>
                 </div>
             </section>
             <BottomNav />
