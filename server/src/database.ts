@@ -151,7 +151,6 @@ export class Database {
                 FOREIGN KEY (userId) REFERENCES users(id)
             )
         `);
-
     }
 
     async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User & { id: number }> {
