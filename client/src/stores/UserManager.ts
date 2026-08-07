@@ -1,6 +1,7 @@
 import { type LoginPayload, type LoginResponse, type RegisterPayload } from '@api/auth/Login.ts';
 import { PermFlags, type User } from '@api/user/User';
-import PermissionManager, { UserPermission } from '@client/stores/PermissionManager';
+import TestPermissionOverride, { GlobalTier } from '@client/stores/TestPermissionOverride';
+import type { StationRole } from '@api/station/StationRole';
 import { Endpoints } from '@client/Endpoints';
 import http from '@client/http/HttpClient';
 
@@ -27,22 +28,20 @@ class UserManager {
 
     private updatePermissionFromUser(user: User | null): void {
         if (!user) {
-            PermissionManager.permission = UserPermission.BandMember;
+            TestPermissionOverride.tier = GlobalTier.BandMember;
             return;
         }
 
         switch (user.permFlags & PermFlags.LevelMask) {
             case PermFlags.IsDirector:
-                PermissionManager.permission = UserPermission.DrJahlas;
-                break;
-            case PermFlags.IsAssistant:
-                PermissionManager.permission = UserPermission.Evaluator;
+                TestPermissionOverride.tier = GlobalTier.Director;
                 break;
             case PermFlags.IsLeadership:
-                PermissionManager.permission = UserPermission.Elevated;
+            case PermFlags.IsAssistant:
+                TestPermissionOverride.tier = GlobalTier.Elevated;
                 break;
             default:
-                PermissionManager.permission = UserPermission.BandMember;
+                TestPermissionOverride.tier = GlobalTier.BandMember;
                 break;
         }
     }
@@ -97,22 +96,14 @@ class UserManager {
         return this._user!;
     }
 
-    /** Checks whether or not the current user is a section leader. */
-    get isLeadership(): boolean {
+    /** Checks whether or not the current user has elevated status (Leadership, TA, or equivalent). */
+    get isElevated(): boolean {
         if (!this.isLoggedIn) {
             return false;
         }
 
-        return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsLeadership;
-    }
-
-    /** Checks whether or not the current user is a teaching assistant. */
-    get isTA(): boolean {
-        if (!this.isLoggedIn) {
-            return false;
-        }
-
-        return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsAssistant;
+        const level = this._user!.permFlags & PermFlags.LevelMask;
+        return level === PermFlags.IsLeadership || level === PermFlags.IsAssistant;
     }
 
     /** Checks whether or not the current user is a band director. */
@@ -241,15 +232,9 @@ class UserManager {
         return response.body;
     }
 
-    async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[]; feedbackItems: string[] } | null> {
-        const response = await http.get<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>(`/stations/${stationId}`);
+    async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[]; feedbackItems: string[]; role: StationRole; instructorNotes?: string[] } | null> {
+        const response = await http.get<{ id: number; name: string; criteria: string[]; feedbackItems: string[]; role: StationRole; instructorNotes?: string[] }>(`/stations/${stationId}`);
         if (!response.ok || !response.body) return null;
-        return response.body;
-    }
-
-    async getStationsFeedback(): Promise<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>> {
-        const response = await http.get<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[] }>>('/stations/feedback');
-        if (!response.ok || !response.body) return [];
         return response.body;
     }
 
@@ -287,25 +272,37 @@ class UserManager {
         return response.ok;
     }
 
+    async setStationRole(userId: number, stationId: number, role: StationRole): Promise<boolean> {
+        const response = await http.put(Endpoints.users.stationRole(userId, stationId), { role });
+        return response.ok;
+    }
+
+    async getUserStationRoles(userId: number): Promise<Array<{ stationId: number; stationName: string; role: StationRole }>> {
+        const response = await http.get(Endpoints.users.stationRoles(userId));
+        if (!response.ok || !response.body) return [];
+        return response.body as Array<{ stationId: number; stationName: string; role: StationRole }>;
+    }
+
     // Station management
-    async getStations(): Promise<any[] | null> {
+    async getStations(): Promise<Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[]; role: StationRole; instructorNotes?: string[] }> | null> {
         const response = await http.get('/stations');
         if (!response.ok || !response.body) {
             return null;
         }
-        return response.body as any[];
+        return response.body as Array<{ id: number; name: string; criteria: string[]; feedbackItems: string[]; role: StationRole; instructorNotes?: string[] }>;
     }
 
-    async createStation(name: string, criteria: string[], feedbackItems?: string[]): Promise<boolean> {
-        const response = await http.post('/stations', { name, criteria, feedbackItems: feedbackItems ?? [] });
+    async createStation(name: string, criteria: string[], feedbackItems?: string[], instructorNotes?: string[]): Promise<boolean> {
+        const response = await http.post('/stations', { name, criteria, feedbackItems: feedbackItems ?? [], instructorNotes: instructorNotes ?? [] });
         return response.ok;
     }
 
-    async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[]): Promise<boolean> {
+    async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[], instructorNotes?: string[]): Promise<boolean> {
         const updates: any = {};
         if (name !== undefined) updates.name = name;
         if (criteria !== undefined) updates.criteria = criteria;
         if (feedbackItems !== undefined) updates.feedbackItems = feedbackItems;
+        if (instructorNotes !== undefined) updates.instructorNotes = instructorNotes;
         const response = await http.put(`/stations/${id}`, updates);
         return response.ok;
     }

@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import { scoreToStatus, getLatestStationEvaluation, type EvaluationRecord } from '@client/utils/evaluationHelpers';
 import { type User } from '@api/user/User';
+import type { StationRole } from '@api/station/StationRole';
 
 type StationSummary = {
     stationId: number; name: string;
@@ -27,6 +27,8 @@ export default function DirectorOverview() {
     const [users, setUsers] = useState<(User & { id: number })[]>([]);
     const [userProgressMap, setUserProgressMap] = useState<Map<number, EvaluationRecord[]>>(new Map());
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+    const [selectedUserRoles, setSelectedUserRoles] = useState<Array<{ stationId: number; stationName: string; role: StationRole }>>([]);
+    const [roleUpdateError, setRoleUpdateError] = useState('');
     const [title, setTitle] = useState('');
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [error, setError] = useState('');
@@ -35,11 +37,41 @@ export default function DirectorOverview() {
     const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
-        if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) { nav('/'); return; }
+        if (!UserManager.isLoggedIn || !UserManager.isDirector) { nav('/'); return; }
         loadAll();
         startSSE();
         return () => sseRef.current?.close();
     }, []);
+
+    useEffect(() => {
+        setRoleUpdateError('');
+        if (!selectedUserId) {
+            setSelectedUserRoles([]);
+            return;
+        }
+        UserManager.getUserStationRoles(selectedUserId).then(setSelectedUserRoles);
+    }, [selectedUserId]);
+
+    const handleRoleChange = async (stationId: number, role: StationRole) => {
+        if (!selectedUserId) return;
+        setRoleUpdateError('');
+        const ok = await UserManager.setStationRole(selectedUserId, stationId, role);
+        if (!ok) {
+            setRoleUpdateError('Failed to update role. Please try again.');
+            return;
+        }
+        const updated = await UserManager.getUserStationRoles(selectedUserId);
+        setSelectedUserRoles(updated);
+
+        const resolved = updated.find((entry) => entry.stationId === stationId);
+        if (resolved && resolved.role !== role) {
+            setRoleUpdateError(
+                `This member's scores at ${resolved.stationName} already grant them ${resolved.role}; overrides can only raise a role, not lower it below what they've earned.`
+            );
+        } else {
+            setRoleUpdateError('');
+        }
+    };
 
     const startSSE = () => {
         // Build SSE URL with auth token via query param isn't ideal; use a ping-based approach via the existing token
@@ -206,6 +238,28 @@ export default function DirectorOverview() {
                                     );
                                 })}
                             </div>
+                            {roleUpdateError && <div className="message error-message">{roleUpdateError}</div>}
+                            <h4 className="role-override-heading">Station Role Overrides</h4>
+                            <div className="role-override-list">
+                                {selectedUserRoles.map((entry) => (
+                                    <div key={entry.stationId} className="role-override-row">
+                                        <span className="role-override-station">{entry.stationName}</span>
+                                        <div className="role-override-options">
+                                            {(['participant', 'instructor', 'evaluator'] as StationRole[]).map((role) => (
+                                                <label key={role} className="role-override-option">
+                                                    <input
+                                                        type="radio"
+                                                        name={`role-${entry.stationId}`}
+                                                        checked={entry.role === role}
+                                                        onChange={() => handleRoleChange(entry.stationId, role)}
+                                                    />
+                                                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -285,6 +339,12 @@ export default function DirectorOverview() {
                 .chip-label { font-size: 0.75rem; color: #6b7280; }
                 .chip-status { font-size: 0.8rem; font-weight: 700; }
                 .chip-score { font-size: 0.7rem; color: #9ca3af; }
+                .role-override-heading { margin: 1.25rem 0 0.6rem; font-size: 0.95rem; }
+                .role-override-list { display: flex; flex-direction: column; gap: 0.5rem; }
+                .role-override-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: white; border: 1px solid #e5e7eb; border-radius: 8px; flex-wrap: wrap; gap: 0.5rem; }
+                .role-override-station { font-weight: 600; font-size: 0.85rem; }
+                .role-override-options { display: flex; gap: 0.75rem; }
+                .role-override-option { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer; }
 
                 .activity-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
                 .activity-row { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.65rem 0.9rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; font-size: 0.9rem; }
