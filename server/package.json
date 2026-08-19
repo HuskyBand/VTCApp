@@ -14,10 +14,10 @@
     "hono": "^4.12.12",
     "jsonwebtoken": "^9.0.3",
     "sqlite3": "^6.0.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "tsx": "^4.7.1"
   },
   "devDependencies": {
-    "@types/node": "^20.19.39",
-    "tsx": "^4.7.1"
+    "@types/node": "^20.19.39"
   }
 }
