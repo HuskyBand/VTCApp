@@ -19,7 +19,7 @@ export class HttpClient {
     private _onUnauthorized?: () => void;
 
     constructor() {
-        this._baseUrl = import.meta.env.VITE_API_URL || DEFAULT_BASE_API_URL;
+        this._baseUrl = import.meta.env.API_HOSTNAME || DEFAULT_BASE_API_URL;
         this._apiVersion = DEFAULT_API_VERSION;
     }
 
