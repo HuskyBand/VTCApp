@@ -66,7 +66,7 @@ export default function LoginPage() {
 					<button type="submit" className="button primary auth-submit">Sign in</button>
 				</form>
 				<div className="auth-footer">
-					<p>Don't have an account? <a href="/register">Create one</a></p>
+					<p>Don't have an account? <NavLink to="/register">Create one</NavLink></p>
 				</div>
 			</section>
 		</main>

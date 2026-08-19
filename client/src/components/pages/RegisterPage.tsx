@@ -131,7 +131,7 @@ export default function RegisterPage() {
                     <button type="submit" className="button primary auth-submit">Create account</button>
                 </form>
                 <div className="auth-footer">
-                    <p>Already have an account? <a href="/login">Sign in</a></p>
+                    <p>Already have an account? <NavLink to="/login">Sign in</NavLink></p>
                 </div>
             </section>
         </main>
