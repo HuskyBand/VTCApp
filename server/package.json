@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "npx tsx watch .",
-    "build": "npx tsc",
+    "build": "",
     "start": "npx tsx ."
   },
   "dependencies": {
