@@ -1,6 +1,11 @@
 {
     "scripts": {
-        "client-dev": "cd ./client && npm run dev",
-        "server-dev": "cd ./server && npm run dev"
+        "dev:client": "cd ./client && npm run dev",
+        "build:client": "cd ./client && npm run build",
+        "start:client": "cd ./client && npm run start",
+
+        "dev:server": "cd ./server && npm run dev",
+        "build:server": "cd ./server && npm run build",
+        "start:server": "cd ./server && npm run start"
     }
 }
