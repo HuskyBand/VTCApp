@@ -3,9 +3,9 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "tsx watch .",
-    "build": "tsc",
-    "start": "tsx ."
+    "dev": "npx tsx watch .",
+    "build": "npx tsc",
+    "start": "npx tsx ."
   },
   "dependencies": {
     "@hono/node-server": "^1.19.14",
