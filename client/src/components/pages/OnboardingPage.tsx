@@ -1,3 +1,5 @@
+import { NavLink } from "react-router";
+
 export default function OnboardingPage() {
     return (
         <main className="center-section onboarding-screen">

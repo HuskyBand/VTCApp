@@ -1,6 +1,6 @@
 import UserManager from '@client/stores/UserManager';
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 export default function RegisterPage() {
 	const nav = useNavigate();
