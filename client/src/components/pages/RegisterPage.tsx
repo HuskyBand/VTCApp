@@ -1,6 +1,6 @@
 import UserManager from '@client/stores/UserManager';
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 export default function RegisterPage() {
 	const nav = useNavigate();
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                     <button type="submit" className="button primary auth-submit">Create account</button>
                 </form>
                 <div className="auth-footer">
-                    <p>Already have an account? <a href="/login">Sign in</a></p>
+                    <p>Already have an account? <NavLink to="/login">Sign in</NavLink></p>
                 </div>
             </section>
         </main>

@@ -1,11 +1,15 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 
-import { DEFAULT_BASE_API_PORT } from '@api/Constants';
+import { DEFAULT_BASE_API_PORT, DEFAULT_BASE_API_URL } from '@api/Constants';
 import { cors } from 'hono/cors';
 import configureRoutes from './configureRoutes';
 import { logger } from 'hono/logger';
 import { Database } from './database';
+import { env } from 'process';
+
+let hostname = env.HOSTNAME ?? DEFAULT_BASE_API_URL;
+let port = Number.parseInt(env.PORT ?? DEFAULT_BASE_API_PORT);
 
 const db = new Database();
 
@@ -33,7 +37,7 @@ app.onError((err, ctx) => {
 
 serve({
     fetch: app.fetch,
-    port: DEFAULT_BASE_API_PORT
+    port: port
 }, (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
+    console.log(`Server is running on ${hostname}:${info.port}`);
 });

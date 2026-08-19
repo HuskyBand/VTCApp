@@ -1,3 +1,5 @@
+import { NavLink } from "react-router";
+
 export default function OnboardingPage() {
     return (
         <main className="center-section onboarding-screen">
@@ -11,14 +13,14 @@ export default function OnboardingPage() {
                     on progress and permissions. Track improvement, celebrate achievements, and grow together.
                 </p>
                 <div className="hero-actions">
-                    <a href="/register" className="button primary">
+                    <NavLink to="/register" className="button primary">
                         <span className="button-icon">✨</span>
                         Create account
-                    </a>
-                    <a href="/login" className="button secondary">
+                    </NavLink>
+                    <NavLink to="/login" className="button secondary">
                         <span className="button-icon">🔑</span>
                         Log in
-                    </a>
+                    </NavLink>
                 </div>
                 <div className="hero-features">
                     <div className="feature-item">
