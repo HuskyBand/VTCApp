@@ -22,7 +22,7 @@ function pushSSE(userId: number | null, data: object) {
 }
 
 export default function configureRoutes(routes: Hono, db: Database) {
-    routes.post('/_health', (c) => {
+    routes.get('/_health', (c) => {
         return c.text("Everything... seems to be in order", 200);
     });
 
