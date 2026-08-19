@@ -30,6 +30,5 @@
 		"allowSyntheticDefaultImports": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true
-	},
-	"include": ["src", "../packages/api"]
+	}
 }

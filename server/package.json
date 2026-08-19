@@ -1,14 +1,14 @@
 {
   "name": "server",
   "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch .",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "tsx ."
   },
   "dependencies": {
     "@hono/node-server": "^1.19.14",
-    "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "bcryptjs": "^3.0.3",
     "hono": "^4.12.12",
