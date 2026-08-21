@@ -205,7 +205,7 @@ export default function StationDetail() {
                                     <div className="evaluation-item latest">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluations[0].createdAt).toLocaleDateString()}
+                                                {evaluations[0].createdAt ? new Date(evaluations[0].createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluations[0].criteria && evaluations[0].criteria.length > 0 ? (
@@ -257,7 +257,7 @@ export default function StationDetail() {
                                     <div key={evaluation.id} className="evaluation-item">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluation.createdAt).toLocaleDateString()}
+                                                {evaluation.createdAt ? new Date(evaluation.createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluation.criteria && evaluation.criteria.length > 0 ? (

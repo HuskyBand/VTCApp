@@ -14,7 +14,7 @@ type StationRecord = {
     id: number;
     name: string;
     criteria: string[];
-    feedbackItems?: string[];
+    feedbackItems: string[];
 };
 
 type UserEvaluation = {
@@ -28,7 +28,32 @@ type UserEvaluation = {
 
 type StationUpdatePayload = Partial<Pick<StationRecord, 'name' | 'criteria' | 'feedbackItems'>>;
 
-type AdminOverview = Record<string, unknown>;
+type AdminOverviewStation = {
+    stationId: number;
+    name: string;
+    mastery: number;
+    proficient: number;
+    developing: number;
+    notStarted: number;
+    evaluatorCount: number;
+    totalUsers: number;
+};
+
+type AdminOverviewActivity = {
+    id: number;
+    evaluatorName: string;
+    evaluatedName: string;
+    stationName: string;
+    score?: number;
+    createdAt: string;
+};
+
+type AdminOverview = {
+    stations: AdminOverviewStation[];
+    activity: AdminOverviewActivity[];
+    totalUsers: number;
+    totalNotifications: number;
+};
 
 /** Manages the client user state. */
 class UserManager {
@@ -319,7 +344,10 @@ class UserManager {
         if (!response.ok || !response.body) {
             return null;
         }
-        return response.body as StationRecord[];
+        return (response.body as Array<Omit<StationRecord, 'feedbackItems'> & { feedbackItems?: string[] }>).map((station) => ({
+            ...station,
+            feedbackItems: station.feedbackItems ?? []
+        }));
     }
 
     async createStation(name: string, criteria: string[], feedbackItems?: string[]): Promise<boolean> {
