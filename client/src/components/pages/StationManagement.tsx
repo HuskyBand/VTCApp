@@ -2,32 +2,33 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 
 type Station = {
     id: number;
     name: string;
     criteria: string[];
     feedbackItems: string[];
+    instructorNotes: string[];
 };
 
 type EditState = {
     name: string;
     criteria: string;
     feedbackItems: string;
+    instructorNotes: string;
 };
 
 export default function StationManagement() {
     const nav = useNavigate();
     const [stations, setStations] = useState<Station[]>([]);
-    const [newStation, setNewStation] = useState<EditState>({ name: '', criteria: '', feedbackItems: '' });
+    const [newStation, setNewStation] = useState<EditState>({ name: '', criteria: '', feedbackItems: '', instructorNotes: '' });
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editState, setEditState] = useState<EditState>({ name: '', criteria: '', feedbackItems: '' });
+    const [editState, setEditState] = useState<EditState>({ name: '', criteria: '', feedbackItems: '', instructorNotes: '' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
-        if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) {
+        if (!UserManager.isLoggedIn || !UserManager.isDirector) {
             nav('/');
             return;
         }
@@ -41,7 +42,7 @@ export default function StationManagement() {
                 setError('Failed to load stations. Check your connection and try again.');
                 return;
             }
-            setStations(data);
+            setStations(data.map(s => ({ ...s, instructorNotes: s.instructorNotes ?? [] })));
         } catch {
             setError('Failed to load stations.');
         }
@@ -54,11 +55,12 @@ export default function StationManagement() {
         const criteria = parseLines(newStation.criteria);
         if (criteria.length === 0) { setError('At least one criterion is required.'); return; }
         const feedbackItems = parseLines(newStation.feedbackItems);
+        const instructorNotes = parseLines(newStation.instructorNotes);
         try {
-            const ok = await UserManager.createStation(newStation.name.trim(), criteria, feedbackItems);
+            const ok = await UserManager.createStation(newStation.name.trim(), criteria, feedbackItems, instructorNotes);
             if (ok) {
                 setSuccess('Station created.');
-                setNewStation({ name: '', criteria: '', feedbackItems: '' });
+                setNewStation({ name: '', criteria: '', feedbackItems: '', instructorNotes: '' });
                 setError('');
                 await loadStations();
             } else {
@@ -75,6 +77,7 @@ export default function StationManagement() {
             name: station.name,
             criteria: station.criteria.join('\n'),
             feedbackItems: station.feedbackItems.join('\n'),
+            instructorNotes: station.instructorNotes.join('\n'),
         });
         setError('');
         setSuccess('');
@@ -85,8 +88,9 @@ export default function StationManagement() {
         const criteria = parseLines(editState.criteria);
         if (criteria.length === 0) { setError('At least one criterion is required.'); return; }
         const feedbackItems = parseLines(editState.feedbackItems);
+        const instructorNotes = parseLines(editState.instructorNotes);
         try {
-            const ok = await UserManager.updateStation(editingId, editState.name.trim(), criteria, feedbackItems);
+            const ok = await UserManager.updateStation(editingId, editState.name.trim(), criteria, feedbackItems, instructorNotes);
             if (ok) {
                 setSuccess('Station updated.');
                 setEditingId(null);
@@ -155,6 +159,16 @@ export default function StationManagement() {
                                                 placeholder="e.g. Tone quality, Rhythm accuracy…"
                                             />
                                         </div>
+                                        <div className="form-group">
+                                            <label>Instructor Notes <span className="label-hint">(one per line)</span></label>
+                                            <textarea
+                                                className="text-input"
+                                                value={editState.instructorNotes}
+                                                onChange={(e) => setEditState({ ...editState, instructorNotes: e.target.value })}
+                                                rows={5}
+                                                placeholder="Detailed teaching notes visible to Instructors and Evaluators only"
+                                            />
+                                        </div>
                                         <div className="button-group">
                                             <button className="button primary" onClick={handleSaveEdit}>Save Changes</button>
                                             <button className="button secondary" onClick={() => setEditingId(null)}>Cancel</button>
@@ -180,6 +194,12 @@ export default function StationManagement() {
                                                 <strong>Areas to Work On</strong>
                                                 {station.feedbackItems.length > 0
                                                     ? <ul>{station.feedbackItems.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                                                    : <p className="empty-hint">None set</p>}
+                                            </div>
+                                            <div className="station-view-col">
+                                                <strong>Instructor Notes</strong>
+                                                {station.instructorNotes.length > 0
+                                                    ? <ul>{station.instructorNotes.map((n, i) => <li key={i}>{n}</li>)}</ul>
                                                     : <p className="empty-hint">None set</p>}
                                             </div>
                                         </div>
@@ -220,6 +240,16 @@ export default function StationManagement() {
                                 placeholder="e.g. Tone quality, Rhythm accuracy…"
                             />
                         </div>
+                        <div className="form-group">
+                            <label>Instructor Notes <span className="label-hint">(one per line)</span></label>
+                            <textarea
+                                className="text-input"
+                                value={newStation.instructorNotes}
+                                onChange={(e) => setNewStation({ ...newStation, instructorNotes: e.target.value })}
+                                rows={5}
+                                placeholder="Detailed teaching notes visible to Instructors and Evaluators only"
+                            />
+                        </div>
                         <button className="button primary" onClick={handleCreate}>Create Station</button>
                     </div>
                 </div>
@@ -229,7 +259,7 @@ export default function StationManagement() {
                 .station-card { border: 1px solid #ddd; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; background: #fafafa; }
                 .station-view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
                 .station-view-header h3 { margin: 0; }
-                .station-view-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+                .station-view-sections { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
                 .station-view-col ul { margin: 0.25rem 0 0; padding-left: 1.25rem; }
                 .station-view-col li { font-size: 0.9rem; }
                 .empty-hint { color: #aaa; font-size: 0.85rem; margin: 0; }

@@ -41,54 +41,6 @@ export const hasPassedStation = (evaluations: EvaluationRecord[], stationId: num
     return status === 'satisfactory' || status === 'mastery';
 };
 
-export const canEvaluateStation = (
-    evaluations: EvaluationRecord[],
-    stationId: number,
-    allStationIds?: number[]
-): boolean => {
-    const current = getLatestStationEvaluation(evaluations, stationId);
-    const currentStatus = scoreToStatus(current?.score);
-
-    if (currentStatus !== 'mastery') {
-        return false;
-    }
-
-    if (!allStationIds) {
-        return true;
-    }
-
-    const index = allStationIds.indexOf(stationId);
-    if (index === -1 || index === allStationIds.length - 1) {
-        return true;
-    }
-
-    return hasPassedStation(evaluations, allStationIds[index + 1]);
-};
-
-export const canTeachStation = (
-    evaluations: EvaluationRecord[],
-    stationId: number,
-    allStationIds?: number[]
-): boolean => {
-    const current = getLatestStationEvaluation(evaluations, stationId);
-    const currentStatus = scoreToStatus(current?.score);
-
-    if (currentStatus === 'not_started' || currentStatus === 'developing') {
-        return false;
-    }
-
-    if (!allStationIds) {
-        return true;
-    }
-
-    const index = allStationIds.indexOf(stationId);
-    if (index === -1 || index === allStationIds.length - 1) {
-        return true;
-    }
-
-    return hasPassedStation(evaluations, allStationIds[index + 1]);
-};
-
 export const isMasteryLocked = (evaluations: EvaluationRecord[], stationId: number): boolean => {
     const latest = getLatestStationEvaluation(evaluations, stationId);
     return scoreToStatus(latest?.score) === 'mastery';

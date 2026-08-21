@@ -22,6 +22,7 @@ import GetEvaluated from "./components/pages/GetEvaluated";
 import StationFeedbackView from "./components/pages/StationFeedbackView";
 import EditVTC from "./components/pages/EditVTC";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserManager from "./stores/UserManager";
 import EvaluateSelectStation from "./components/pages/EvaluateSelectStation";
 import EvaluationForm from "./components/pages/EvaluationForm";
 import StationManagement from "./components/pages/StationManagement";
@@ -42,7 +43,7 @@ function App() {
 				<Route path="/profile" element={<RequireAuth><ProfileSettingsPage /></RequireAuth>} />
 				<Route path="/permissions" element={
 					<RequireAuth>
-						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<ProtectedRoute requiredPermission={() => UserManager.isDirector}>
 							<PermissionManagementPage />
 						</ProtectedRoute>
 					</RequireAuth>
@@ -53,14 +54,14 @@ function App() {
 				<Route path="/station-reference" element={<RequireAuth><StationFeedbackView /></RequireAuth>} />
 				<Route path="/admin/overview" element={
 					<RequireAuth>
-						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<ProtectedRoute requiredPermission={() => UserManager.isDirector}>
 							<DirectorOverview />
 						</ProtectedRoute>
 					</RequireAuth>
 				} />
 				<Route path="/admin/stations" element={
 					<RequireAuth>
-						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<ProtectedRoute requiredPermission={() => UserManager.isDirector}>
 							<StationManagement />
 						</ProtectedRoute>
 					</RequireAuth>
@@ -74,7 +75,7 @@ function App() {
 				<Route path="/evaluate-alt-expanded" element={<RequireAuth><EvaluateAltExpanded /></RequireAuth>} />
 				<Route path="/admin/edit-vtc" element={
 					<RequireAuth>
-						<ProtectedRoute requiredPermission={(pm) => pm.canViewAdmin()}>
+						<ProtectedRoute requiredPermission={() => UserManager.isDirector}>
 							<EditVTC />
 						</ProtectedRoute>
 					</RequireAuth>
