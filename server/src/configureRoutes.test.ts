@@ -189,4 +189,130 @@ describe('configureRoutes', () => {
         const evaluationBody = (await allowed.json()) as { id: number };
         expect(evaluationBody.id).toBeTypeOf('number');
     });
+
+    it('returns current user via auth/me and updates profile without allowing permission escalation', async () => {
+        const member = await registerAndToken('profile-user');
+
+        const meResponse = await app.request('/v1/auth/me', {
+            headers: { Authorization: `Bearer ${member.token}` },
+        });
+        expect(meResponse.status).toBe(200);
+        const me = (await meResponse.json()) as RegisteredUser;
+        expect(me.username).toBe('profile-user');
+
+        const updateResponse = await app.request('/v1/auth/profile', {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${member.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                firstName: 'Updated',
+                permFlags: PermFlags.IsDirector,
+            }),
+        });
+        expect(updateResponse.status).toBe(200);
+        const updated = (await updateResponse.json()) as RegisteredUser;
+        expect(updated.firstName).toBe('Updated');
+        expect(updated.permFlags).toBe(PermFlags.IsBandMember);
+    });
+
+    it('allows only directors to create broadcasts', async () => {
+        const member = await registerAndToken('member-broadcast');
+        const director = await registerAndToken('director-broadcast', true);
+
+        const memberPost = await app.request('/v1/notifications', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${member.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: 'Nope', message: 'Should fail' }),
+        });
+        expect(memberPost.status).toBe(403);
+
+        const directorPost = await app.request('/v1/notifications', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: 'Reminder', message: 'Wear uniforms' }),
+        });
+        expect(directorPost.status).toBe(200);
+
+        const memberList = await app.request('/v1/notifications', {
+            headers: { Authorization: `Bearer ${member.token}` },
+        });
+        expect(memberList.status).toBe(200);
+        const notifications = (await memberList.json()) as Array<{ title: string }>;
+        expect(notifications.some((n) => n.title === 'Reminder')).toBe(true);
+    });
+
+    it('permits stations/feedback only for elevated roles or override', async () => {
+        const director = await registerAndToken('director-feedback', true);
+        const member = await registerAndToken('member-feedback');
+
+        await app.request('/v1/stations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: 'Feedback Station',
+                criteria: ['Tone'],
+                feedbackItems: ['Rhythm'],
+            }),
+        });
+
+        const memberDenied = await app.request('/v1/stations/feedback', {
+            headers: { Authorization: `Bearer ${member.token}` },
+        });
+        expect(memberDenied.status).toBe(403);
+
+        const memberOverride = await app.request('/v1/stations/feedback', {
+            headers: {
+                Authorization: `Bearer ${member.token}`,
+                'X-Test-Permission': 'instructor',
+            },
+        });
+        expect(memberOverride.status).toBe(200);
+        const stations = (await memberOverride.json()) as Array<{ name: string; feedbackItems: string[] }>;
+        expect(stations.some((s) => s.name === 'Feedback Station')).toBe(true);
+        expect(stations[0].feedbackItems).toBeDefined();
+    });
+
+    it('pulls next queue member and removes them from queue', async () => {
+        const director = await registerAndToken('director-pull', true);
+        const student = await registerAndToken('student-pull');
+
+        await app.request('/v1/stations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Queue Pull Station', criteria: ['Articulation'] }),
+        });
+
+        await app.request('/v1/stations/1/queue', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+
+        const pullResponse = await app.request('/v1/stations/1/queue/next', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${director.token}` },
+        });
+        expect(pullResponse.status).toBe(200);
+        const pulled = (await pullResponse.json()) as { removedEntry: { userId: number } };
+        expect(pulled.removedEntry.userId).toBe(student.user.id);
+
+        const queueResponse = await app.request('/v1/stations/1/queue', {
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+        const queue = (await queueResponse.json()) as Array<{ userId: number }>;
+        expect(queue).toHaveLength(0);
+    });
 });
