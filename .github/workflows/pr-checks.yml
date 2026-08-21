@@ -36,7 +36,7 @@ jobs:
         run: npm run build
 
   server-typecheck:
-    name: Server typecheck
+    name: Server typecheck and tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,6 +57,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Unit and integration tests
+        run: npm run test:run
 
   api-typecheck:
     name: API package typecheck

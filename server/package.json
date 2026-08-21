@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "tsx watch .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
     "build": "npm install",
     "start": "tsx ."
   },
@@ -19,6 +21,7 @@
     "tsx": "^4.7.1"
   },
   "devDependencies": {
-    "@types/node": "^20.19.39"
+    "@types/node": "^20.19.39",
+    "vitest": "^3.2.4"
   }
 }
