@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch .",
+    "typecheck": "tsc --noEmit",
     "build": "npm install",
     "start": "tsx ."
   },
