@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "ci:client": "npm --prefix ./client ci && npm --prefix ./client run test:run && npm --prefix ./client run build",
+        "ci:client": "npm --prefix ./client ci && npm --prefix ./client run lint && npm --prefix ./client run test:run && npm --prefix ./client run build",
         "ci:client:lint": "npm --prefix ./client ci && npm --prefix ./client run lint",
         "ci:server": "npm --prefix ./server ci && npm --prefix ./server run typecheck",
         "ci:api": "npm --prefix ./packages/api ci && npm --prefix ./packages/api run typecheck",

@@ -30,15 +30,15 @@ class StationManager {
     }
 
     private async loadStation(id: StationId): Promise<UserStationData | null> {
-        let criteriaListResponse = await http.get<CriteriaListResponse>(Endpoints.STATION_CRITERIA_LIST(id));
+        const criteriaListResponse = await http.get<CriteriaListResponse>(Endpoints.STATION_CRITERIA_LIST(id));
 
         if (!criteriaListResponse.ok) {
             return null;
         }
 
-        let evaluationResponse = await http.get<EvaluationResponse>(Endpoints.STATION_EVALUATION_LATEST(id));
+        const evaluationResponse = await http.get<EvaluationResponse>(Endpoints.STATION_EVALUATION_LATEST(id));
 
-        let evaluation = evaluationResponse.ok ? evaluationResponse.body : null;
+        const evaluation = evaluationResponse.ok ? evaluationResponse.body : null;
 
         return {
             id,
@@ -53,18 +53,18 @@ class StationManager {
             return false;
         }
 
-        let stationListResponse = await http.get<StationListResponse>(Endpoints.STATION_LIST);
+        const stationListResponse = await http.get<StationListResponse>(Endpoints.STATION_LIST);
 
         if (!stationListResponse.ok) {
             return false;
         }
 
         // Stations are automatically storted by order; no need to sort.
-        let stationData: UserStationData[] = [];
+        const stationData: UserStationData[] = [];
         stationData.length = stationListResponse.body.stations.length;
 
         for (let i = 0; i < stationData.length; ++i) {
-            let station = await this.loadStation(stationListResponse.body.stations[i].id);
+            const station = await this.loadStation(stationListResponse.body.stations[i].id);
 
             if (!station) {
                 return false;

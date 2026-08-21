@@ -181,7 +181,7 @@ export default function EvaluationForm() {
             } else {
                 setMessage('Failed to submit evaluation. Please try again.');
             }
-        } catch (error) {
+        } catch {
             setMessage('An error occurred while submitting. Please try again.');
         }
 
