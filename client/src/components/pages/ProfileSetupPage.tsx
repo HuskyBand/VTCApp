@@ -44,7 +44,7 @@ export default function ProfileSetupPage() {
                 instrument: formData.instrument
             });
             nav('/profile');
-        } catch (err) {
+        } catch {
             setError('Unable to save profile.');
         }
     };

@@ -4,6 +4,57 @@ import PermissionManager, { UserPermission } from '@client/stores/PermissionMana
 import { Endpoints } from '@client/Endpoints';
 import http from '@client/http/HttpClient';
 
+type QueueActionBody = {
+    message?: string;
+    error?: string;
+    removedEntry?: { id: number; stationId: number; userId: number; requestedAt: string; status: string };
+};
+
+type StationRecord = {
+    id: number;
+    name: string;
+    criteria: string[];
+    feedbackItems: string[];
+};
+
+type UserEvaluation = {
+    id?: number;
+    stationId: number;
+    score?: number;
+    comments?: string;
+    criteria?: string[];
+    createdAt?: string;
+};
+
+type StationUpdatePayload = Partial<Pick<StationRecord, 'name' | 'criteria' | 'feedbackItems'>>;
+
+type AdminOverviewStation = {
+    stationId: number;
+    name: string;
+    mastery: number;
+    proficient: number;
+    developing: number;
+    notStarted: number;
+    evaluatorCount: number;
+    totalUsers: number;
+};
+
+type AdminOverviewActivity = {
+    id: number;
+    evaluatorName: string;
+    evaluatedName: string;
+    stationName: string;
+    score?: number;
+    createdAt: string;
+};
+
+type AdminOverview = {
+    stations: AdminOverviewStation[];
+    activity: AdminOverviewActivity[];
+    totalUsers: number;
+    totalNotifications: number;
+};
+
 /** Manages the client user state. */
 class UserManager {
     private _authToken: string | null = null;
@@ -48,10 +99,10 @@ class UserManager {
     }
 
     private loadFromStorage(): void {
-        let data = localStorage.getItem('user_data');
+        const data = localStorage.getItem('user_data');
 
         if (data) {
-            let parsed = JSON.parse(data) as {
+            const parsed = JSON.parse(data) as {
                 _authToken: string | null;
                 _user: User | null;
             } | undefined;
@@ -150,8 +201,8 @@ class UserManager {
     }
 
     async loginWithPassword(username: string, password: string): Promise<boolean> {
-        let request: LoginPayload = { username, password };
-        let response = await http.post<LoginResponse>(Endpoints.auth.login, request);
+        const request: LoginPayload = { username, password };
+        const response = await http.post<LoginResponse>(Endpoints.auth.login, request);
 
         if (!response.ok) {
             return false;
@@ -207,7 +258,7 @@ class UserManager {
 
     async joinStationQueue(stationId: number): Promise<{ success: boolean; message?: string }> {
         const response = await http.post(Endpoints.STATION_QUEUE(stationId), {});
-        const body = response.body as any;
+        const body = response.body as QueueActionBody | undefined;
         return {
             success: response.ok,
             message: body?.message ?? (response.ok ? 'Joined queue.' : response.statusText)
@@ -216,7 +267,7 @@ class UserManager {
 
     async leaveStationQueue(stationId: number): Promise<{ success: boolean; message?: string }> {
         const response = await http.delete(Endpoints.STATION_QUEUE(stationId));
-        const body = response.body as any;
+        const body = response.body as QueueActionBody | undefined;
         return {
             success: response.ok,
             message: body?.message ?? (response.ok ? 'Left queue.' : response.statusText)
@@ -225,7 +276,7 @@ class UserManager {
 
     async takeNextStationQueue(stationId: number): Promise<{ success: boolean; message?: string; removedEntry?: { id: number; stationId: number; userId: number; requestedAt: string; status: string } }> {
         const response = await http.post(Endpoints.STATION_QUEUE_NEXT(stationId), {});
-        const body = response.body as any;
+        const body = response.body as QueueActionBody | undefined;
         return {
             success: response.ok,
             message: body?.error ?? body?.message ?? (response.ok ? 'Pulled next student.' : response.statusText),
@@ -233,12 +284,12 @@ class UserManager {
         };
     }
 
-    async getOverview(): Promise<any> {
+    async getOverview(): Promise<AdminOverview | null> {
         const response = await http.get(Endpoints.admin.overview);
         if (!response.ok || !response.body) {
             return null;
         }
-        return response.body;
+        return response.body as AdminOverview;
     }
 
     async getStation(stationId: number): Promise<{ id: number; name: string; criteria: string[]; feedbackItems: string[] } | null> {
@@ -274,12 +325,12 @@ class UserManager {
         return response.ok;
     }
 
-    async getEvaluationsForUser(userId: number): Promise<any[]> {
+    async getEvaluationsForUser(userId: number): Promise<UserEvaluation[]> {
         const response = await http.get(Endpoints.evaluations.list(userId));
         if (!response.ok || !response.body) {
             return [];
         }
-        return response.body as any[];
+        return response.body as UserEvaluation[];
     }
 
     async updateUserPermissions(userId: number, permFlags: number): Promise<boolean> {
@@ -288,12 +339,15 @@ class UserManager {
     }
 
     // Station management
-    async getStations(): Promise<any[] | null> {
+    async getStations(): Promise<StationRecord[] | null> {
         const response = await http.get('/stations');
         if (!response.ok || !response.body) {
             return null;
         }
-        return response.body as any[];
+        return (response.body as Array<Omit<StationRecord, 'feedbackItems'> & { feedbackItems?: string[] }>).map((station) => ({
+            ...station,
+            feedbackItems: station.feedbackItems ?? []
+        }));
     }
 
     async createStation(name: string, criteria: string[], feedbackItems?: string[]): Promise<boolean> {
@@ -302,7 +356,7 @@ class UserManager {
     }
 
     async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[]): Promise<boolean> {
-        const updates: any = {};
+        const updates: StationUpdatePayload = {};
         if (name !== undefined) updates.name = name;
         if (criteria !== undefined) updates.criteria = criteria;
         if (feedbackItems !== undefined) updates.feedbackItems = feedbackItems;

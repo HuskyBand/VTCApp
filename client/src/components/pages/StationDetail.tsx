@@ -4,9 +4,18 @@ import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
 import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
 
+type StationEvaluation = {
+    id?: number;
+    stationId: number;
+    score?: number;
+    comments?: string;
+    criteria?: string[];
+    createdAt?: string;
+};
+
 export default function StationDetail() {
     const { id } = useParams();
-    const [evaluations, setEvaluations] = useState<any[]>([]);
+    const [evaluations, setEvaluations] = useState<StationEvaluation[]>([]);
     const [showHistory, setShowHistory] = useState(false);
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
@@ -31,7 +40,7 @@ export default function StationDetail() {
     const loadEvaluations = async () => {
         if (UserManager.isLoggedIn) {
             const userEvaluations = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
-            const stationEvaluations = userEvaluations.filter((evaluation: any) => evaluation.stationId === parseInt(id!));
+            const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === parseInt(id!));
             setEvaluations(stationEvaluations);
         }
     };
@@ -55,7 +64,7 @@ export default function StationDetail() {
             if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
                 setQueueMessage('');
             }
-        } catch (err) {
+        } catch {
             setQueueError('Failed to load queue status.');
         }
     };
@@ -196,7 +205,7 @@ export default function StationDetail() {
                                     <div className="evaluation-item latest">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluations[0].createdAt).toLocaleDateString()}
+                                                {evaluations[0].createdAt ? new Date(evaluations[0].createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluations[0].criteria && evaluations[0].criteria.length > 0 ? (
@@ -248,7 +257,7 @@ export default function StationDetail() {
                                     <div key={evaluation.id} className="evaluation-item">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluation.createdAt).toLocaleDateString()}
+                                                {evaluation.createdAt ? new Date(evaluation.createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluation.criteria && evaluation.criteria.length > 0 ? (
