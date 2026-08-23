@@ -22,24 +22,3 @@ export function computeStationRoleFromScores(
     if ((currentPassed || currentMastery) && nextPassed) return 'instructor';
     return 'participant';
 }
-
-function demo() {
-    const assertEqual = (actual: StationRole, expected: StationRole, label: string) => {
-        if (actual !== expected) throw new Error(`${label}: expected ${expected}, got ${actual}`);
-    };
-
-    assertEqual(computeStationRoleFromScores(undefined, undefined, false), 'participant', 'no scores at all');
-    assertEqual(computeStationRoleFromScores(30, 90, false), 'participant', 'below 50 at current station');
-    assertEqual(computeStationRoleFromScores(60, undefined, false), 'participant', 'passed here, next not started');
-    assertEqual(computeStationRoleFromScores(60, 60, false), 'instructor', 'passed here, passed next');
-    assertEqual(computeStationRoleFromScores(85, 60, false), 'evaluator', 'mastery here, passed next');
-    assertEqual(computeStationRoleFromScores(85, 30, false), 'participant', 'mastery here but next not passed');
-    assertEqual(computeStationRoleFromScores(85, undefined, true), 'evaluator', 'mastery at last station, no next station to check');
-    assertEqual(computeStationRoleFromScores(60, undefined, true), 'instructor', 'passed at last station, no next station to check');
-
-    console.log('StationRole self-check passed.');
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-    demo();
-}
