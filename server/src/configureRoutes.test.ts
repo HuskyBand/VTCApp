@@ -315,4 +315,103 @@ describe('configureRoutes', () => {
         const queue = (await queueResponse.json()) as Array<{ userId: number }>;
         expect(queue).toHaveLength(0);
     });
+
+    it('is idempotent when joining queue twice', async () => {
+        const director = await registerAndToken('director-idempotent', true);
+        const student = await registerAndToken('student-idempotent');
+
+        await app.request('/v1/stations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Idempotent Queue', criteria: ['Pulse'] }),
+        });
+
+        const first = await app.request('/v1/stations/1/queue', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+        expect(first.status).toBe(200);
+
+        const second = await app.request('/v1/stations/1/queue', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+        expect(second.status).toBe(200);
+        const secondBody = (await second.json()) as { message?: string };
+        expect(secondBody.message).toContain('Already in queue');
+
+        const queueResponse = await app.request('/v1/stations/1/queue', {
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+        const queue = (await queueResponse.json()) as Array<{ userId: number }>;
+        expect(queue).toHaveLength(1);
+    });
+
+    it('forbids non-elevated users from viewing other users evaluations', async () => {
+        const memberA = await registerAndToken('member-evals-a');
+        const memberB = await registerAndToken('member-evals-b');
+
+        const forbidden = await app.request(`/v1/evaluations/${memberB.user.id}`, {
+            headers: { Authorization: `Bearer ${memberA.token}` },
+        });
+        expect(forbidden.status).toBe(403);
+
+        const allowedWithOverride = await app.request(`/v1/evaluations/${memberB.user.id}`, {
+            headers: {
+                Authorization: `Bearer ${memberA.token}`,
+                'X-Test-Permission': 'evaluator',
+            },
+        });
+        expect(allowedWithOverride.status).toBe(200);
+    });
+
+    it('allows director to update and delete station but forbids member', async () => {
+        const director = await registerAndToken('director-station-edit', true);
+        const member = await registerAndToken('member-station-edit');
+
+        await app.request('/v1/stations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Editable Station', criteria: ['Intonation'], feedbackItems: [] }),
+        });
+
+        const memberUpdate = await app.request('/v1/stations/1', {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${member.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Nope' }),
+        });
+        expect(memberUpdate.status).toBe(403);
+
+        const directorUpdate = await app.request('/v1/stations/1', {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Edited Station', criteria: ['Intonation', 'Rhythm'] }),
+        });
+        expect(directorUpdate.status).toBe(200);
+
+        const stationAfterUpdate = await app.request('/v1/stations/1', {
+            headers: { Authorization: `Bearer ${director.token}` },
+        });
+        const stationBody = (await stationAfterUpdate.json()) as { name: string; criteria: string[] };
+        expect(stationBody.name).toBe('Edited Station');
+        expect(stationBody.criteria).toHaveLength(2);
+
+        const directorDelete = await app.request('/v1/stations/1', {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${director.token}` },
+        });
+        expect(directorDelete.status).toBe(200);
+    });
 });
