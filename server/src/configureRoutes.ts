@@ -94,17 +94,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
     };
 
-    const isDirectorOverride = (overridePermission?: string) => overridePermission === 'dr_jahlas';
-    const isElevatedOverride = (overridePermission?: string) => overridePermission === 'elevated' || overridePermission === 'dr_jahlas';
-
-    const canSubmitEvaluation = async (currentUserId: number, stationId: number, overridePermission?: string): Promise<boolean> => {
+    const canSubmitEvaluation = async (currentUserId: number, stationId: number): Promise<boolean> => {
         const currentUser = await db.getUserById(currentUserId);
         if (!currentUser) {
             return false;
-        }
-
-        if (isDirectorOverride(overridePermission) || isElevatedOverride(overridePermission)) {
-            return true;
         }
 
         const role = await resolveStationRole(db, currentUser, stationId);
@@ -239,9 +232,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.put('/users/:id/permissions', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('id'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(userId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
         const { permFlags } = await c.req.json() as { permFlags: number };
@@ -253,9 +245,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
         const stationId = parseInt(c.req.param('stationId'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -276,9 +267,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/users/:userId/stations/roles', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -308,7 +298,6 @@ export default function configureRoutes(routes: Hono, db: Database) {
             feedbackItems?: string[];
             overallStatus?: string;
         };
-        const testPermission = c.req.header('X-Test-Permission');
 
         const currentUser = await db.getUserById(evaluatorId);
         if (!currentUser) {
@@ -320,7 +309,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Target has already reached mastery for this station.' }, 400);
         }
 
-        const eligible = await canSubmitEvaluation(evaluatorId, body.stationId, testPermission ?? undefined);
+        const eligible = await canSubmitEvaluation(evaluatorId, body.stationId);
         if (!eligible) {
             return c.json({ error: 'You do not have sufficient station progress to submit evaluations for this station yet.' }, 403);
         }
@@ -359,21 +348,19 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.get('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
         if (!currentUser) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector || isDirectorOverride(testPermission ?? undefined));
+        const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector);
         return c.json(notifications);
     });
 
     routes.post('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -413,9 +400,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.get('/admin/overview', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -426,12 +412,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/evaluations/:userId', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
         const canViewAny = currentUser?.permFlags === PermFlags.IsDirector ||
             currentUser?.permFlags === PermFlags.IsAssistant ||
-            currentUser?.permFlags === PermFlags.IsLeadership ||
-            isElevatedOverride(testPermission ?? undefined);
+            currentUser?.permFlags === PermFlags.IsLeadership;
         if (currentUserId !== targetUserId && !canViewAny) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -448,10 +432,9 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const testPermission = c.req.header('X-Test-Permission');
         const station = await db.getStationById(stationId);
         const base = station ?? { id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [], instructorNotes: [] };
-        const role = await resolveStationRole(db, currentUser, stationId, testPermission ?? undefined);
+        const role = await resolveStationRole(db, currentUser, stationId);
 
         return c.json({
             id: base.id,
@@ -470,10 +453,9 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const testPermission = c.req.header('X-Test-Permission');
         const stations = await db.getAllStations();
         const withRoles = await Promise.all(stations.map(async (station) => {
-            const role = await resolveStationRole(db, currentUser, station.id!, testPermission ?? undefined);
+            const role = await resolveStationRole(db, currentUser, station.id!);
             return {
                 id: station.id,
                 name: station.name,
@@ -582,7 +564,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const eligible = await canSubmitEvaluation(currentUserId, stationId, c.req.header('X-Test-Permission') ?? undefined);
+        const eligible = await canSubmitEvaluation(currentUserId, stationId);
         if (!eligible) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -622,9 +604,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.post('/stations', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -635,9 +616,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.put('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -649,9 +629,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.delete('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
