@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    canEvaluateStation,
-    canTeachStation,
     getLatestStationEvaluation,
     getStatusLabel,
-    hasPassedStation,
     scoreToStatus,
 } from './evaluationHelpers';
 
@@ -33,32 +30,6 @@ describe('getLatestStationEvaluation', () => {
 
         expect(getLatestStationEvaluation(evaluations, 10)?.score).toBe(90);
         expect(getLatestStationEvaluation(evaluations, 11)).toBeNull();
-    });
-});
-
-describe('progression helpers', () => {
-    const stationOrder = [1, 2, 3];
-
-    it('requires mastery before evaluation unlocks', () => {
-        const evaluations = [{ stationId: 1, score: 79 }];
-
-        expect(canEvaluateStation(evaluations, 1, stationOrder)).toBe(false);
-    });
-
-    it('requires next station pass for evaluate/teach when ordered', () => {
-        const evaluations = [
-            { stationId: 1, score: 85 },
-            { stationId: 2, score: 70 },
-        ];
-
-        expect(canEvaluateStation(evaluations, 1, stationOrder)).toBe(true);
-        expect(canTeachStation(evaluations, 1, stationOrder)).toBe(true);
-        expect(hasPassedStation(evaluations, 2)).toBe(true);
-    });
-
-    it('blocks teaching when status is developing or not_started', () => {
-        expect(canTeachStation([{ stationId: 2, score: 25 }], 2, stationOrder)).toBe(false);
-        expect(canTeachStation([], 2, stationOrder)).toBe(false);
     });
 });
 

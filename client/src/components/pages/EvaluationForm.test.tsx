@@ -26,26 +26,15 @@ vi.mock('@client/stores/UserManager', () => ({
     },
 }));
 
-vi.mock('@client/stores/PermissionManager', () => ({
-    default: {
-        canViewAdmin: vi.fn(),
-        canEvaluate: vi.fn(),
-    },
-}));
-
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import EvaluationForm from './EvaluationForm';
 
 const mockedUserManager = vi.mocked(UserManager);
-const mockedPermissionManager = vi.mocked(PermissionManager);
 
 describe('EvaluationForm', () => {
     beforeEach(() => {
         cleanup();
         vi.clearAllMocks();
-        mockedPermissionManager.canViewAdmin.mockReturnValue(false);
-        mockedPermissionManager.canEvaluate.mockReturnValue(true);
         mockedUserManager.getAllUsers.mockResolvedValue([
             {
                 id: 1,
@@ -62,6 +51,7 @@ describe('EvaluationForm', () => {
             name: 'Station 1',
             criteria: ['Posture'],
             feedbackItems: ['Tone'],
+            role: 'evaluator',
         } as never);
         mockedUserManager.getEvaluationsForUser.mockResolvedValue([] as never);
         mockedUserManager.submitEvaluation.mockResolvedValue(true as never);

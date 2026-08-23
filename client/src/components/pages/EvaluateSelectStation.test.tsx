@@ -29,27 +29,15 @@ vi.mock('@client/stores/UserManager', () => ({
     },
 }));
 
-vi.mock('@client/stores/PermissionManager', () => ({
-    default: {
-        canViewAdmin: vi.fn(),
-        canEvaluate: vi.fn(),
-    },
-}));
-
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import EvaluateSelectStation from './EvaluateSelectStation';
 
 const mockedUserManager = vi.mocked(UserManager);
-const mockedPermissionManager = vi.mocked(PermissionManager);
 
 describe('EvaluateSelectStation', () => {
     beforeEach(() => {
         cleanup();
         vi.clearAllMocks();
-
-        mockedPermissionManager.canViewAdmin.mockReturnValue(false);
-        mockedPermissionManager.canEvaluate.mockReturnValue(false);
 
         mockedUserManager.getEvaluationsForUser.mockResolvedValue([
             { stationId: 1, score: 85 },
@@ -57,8 +45,8 @@ describe('EvaluateSelectStation', () => {
         ] as never);
 
         mockedUserManager.getStations.mockResolvedValue([
-            { id: 1, name: 'Station 1', criteria: ['Posture'], feedbackItems: [] },
-            { id: 2, name: 'Station 2', criteria: ['Rhythm'], feedbackItems: [] },
+            { id: 1, name: 'Station 1', criteria: ['Posture'], feedbackItems: [], role: 'evaluator' },
+            { id: 2, name: 'Station 2', criteria: ['Rhythm'], feedbackItems: [], role: 'evaluator' },
         ] as never);
 
         mockedUserManager.getStationQueue.mockResolvedValue([] as never);

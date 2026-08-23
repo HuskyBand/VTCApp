@@ -16,32 +16,29 @@ vi.mock('../BottomNav', () => ({
 vi.mock('@client/stores/UserManager', () => ({
     default: {
         isLoggedIn: true,
+        isDirector: true,
         getOverview: vi.fn(),
         getNotifications: vi.fn(),
         getAllUsers: vi.fn(),
         getEvaluationsForUser: vi.fn(),
         createNotification: vi.fn(),
-    },
-}));
-
-vi.mock('@client/stores/PermissionManager', () => ({
-    default: {
-        canViewAdmin: vi.fn(),
+        getUserStationRoles: vi.fn(),
+        setStationRole: vi.fn(),
     },
 }));
 
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import DirectorOverview from './DirectorOverview';
 
 const mockedUserManager = vi.mocked(UserManager);
-const mockedPermissionManager = vi.mocked(PermissionManager);
 
 describe('DirectorOverview', () => {
     beforeEach(() => {
         cleanup();
         vi.clearAllMocks();
-        mockedPermissionManager.canViewAdmin.mockReturnValue(true);
+        mockedUserManager.isLoggedIn = true;
+        mockedUserManager.isDirector = true;
+        mockedUserManager.getUserStationRoles.mockResolvedValue([] as never);
 
         mockedUserManager.getOverview.mockResolvedValue({
             stations: [

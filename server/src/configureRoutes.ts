@@ -5,6 +5,7 @@ import { Database } from './database';
 import type { User } from '@api/user/User';
 import { PermFlags } from '@api/user/User';
 import type { LoginPayload, RegisterPayload, LoginResponse } from '@api/auth/Login';
+import { resolveStationRole } from './stationRole';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -93,41 +94,14 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
     };
 
-    const isMastery = (score?: number | null) => score !== undefined && score !== null && score >= 80;
-    const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
-
-    const isDirectorOverride = (overridePermission?: string) => overridePermission === 'dr_jahlas';
-    const isElevatedOverride = (overridePermission?: string) => overridePermission === 'evaluator' || overridePermission === 'elevated' || overridePermission === 'dr_jahlas' || overridePermission === 'instructor';
-
-    const canSubmitEvaluation = async (currentUserId: number, stationId: number, overridePermission?: string): Promise<boolean> => {
+    const canSubmitEvaluation = async (currentUserId: number, stationId: number): Promise<boolean> => {
         const currentUser = await db.getUserById(currentUserId);
         if (!currentUser) {
             return false;
         }
 
-        if (isDirectorOverride(overridePermission) || isElevatedOverride(overridePermission)) {
-            return true;
-        }
-
-        if (
-            currentUser.permFlags === PermFlags.IsDirector ||
-            currentUser.permFlags === PermFlags.IsAssistant ||
-            currentUser.permFlags === PermFlags.IsLeadership
-        ) {
-            return true;
-        }
-
-        const currentStation = await db.getLatestEvaluationForUserStation(currentUserId, stationId);
-        const nextStation = stationId >= 6 ? null : await db.getLatestEvaluationForUserStation(currentUserId, stationId + 1);
-        const currentStatus = currentStation?.score;
-        const currentMastery = isMastery(currentStatus);
-        const currentPassed = hasPassed(currentStatus);
-        const nextPassed = stationId >= 6 || hasPassed(nextStation?.score);
-
-        const canEvaluate = currentMastery && nextPassed;
-        const canTeach = (currentPassed || currentMastery) && nextPassed;
-
-        return canEvaluate || canTeach;
+        const role = await resolveStationRole(db, currentUser, stationId);
+        return role === 'evaluator';
     };
 
     const notifyFirstInQueue = async (stationId: number, senderId: number, senderName: string) => {
@@ -160,21 +134,18 @@ export default function configureRoutes(routes: Hono, db: Database) {
             }
         });
 
-        const stations = allStations.map((station, index) => {
+        const stations = await Promise.all(allStations.map(async (station) => {
             const stationId = station.id!;
-            const nextStationId = allStations[index + 1]?.id;
             let mastery = 0;
             let proficient = 0;
             let developing = 0;
             let notStarted = 0;
             let evaluatorCount = 0;
 
-            users.forEach((user) => {
+            await Promise.all(users.map(async (user) => {
                 const key = `${user.id}:${stationId}`;
-                const nextKey = nextStationId !== undefined ? `${user.id}:${nextStationId}` : null;
                 const latest = latestByUserStation.get(key);
 
-                // Count progress level
                 if (!latest || latest.score === null || latest.score === undefined) {
                     notStarted += 1;
                 } else if (latest.score >= 80) {
@@ -185,15 +156,11 @@ export default function configureRoutes(routes: Hono, db: Database) {
                     developing += 1;
                 }
 
-                // Count evaluators: elevated permission OR mastery here + passed next
-                const isElevated = (user.permFlags ?? 0) >= PermFlags.IsLeadership;
-                const hasCurrentMastery = isMastery(latest?.score);
-                const nextScore = nextKey === null ? 100 : latestByUserStation.get(nextKey)?.score;
-                const hasNextPass = nextKey === null || hasPassed(nextScore);
-                if (isElevated || (hasCurrentMastery && hasNextPass)) {
+                const role = await resolveStationRole(db, user, stationId);
+                if (role === 'evaluator') {
                     evaluatorCount += 1;
                 }
-            });
+            }));
 
             return {
                 stationId,
@@ -205,7 +172,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 evaluatorCount,
                 totalUsers: users.length
             };
-        });
+        }));
 
         const notifications = await db.getNotificationsForUser(0, true);
 
@@ -265,14 +232,59 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.put('/users/:id/permissions', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('id'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(userId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
         const { permFlags } = await c.req.json() as { permFlags: number };
         await db.updateUser(targetUserId, { permFlags });
         return c.json({ success: true });
+    });
+
+    routes.put('/users/:userId/stations/:stationId/role', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const targetUserId = parseInt(c.req.param('userId'));
+        const stationId = parseInt(c.req.param('stationId'));
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const { role } = await c.req.json() as { role: string };
+        if (role !== 'participant' && role !== 'instructor' && role !== 'evaluator') {
+            return c.json({ error: 'role must be participant, instructor, or evaluator' }, 400);
+        }
+
+        if (role === 'participant') {
+            await db.deleteStationRoleOverride(targetUserId, stationId);
+        } else {
+            await db.setStationRoleOverride(targetUserId, stationId, role);
+        }
+
+        return c.json({ success: true });
+    });
+
+    routes.get('/users/:userId/stations/roles', authMiddleware, async (c) => {
+        const currentUserId = (c as any).userId as number;
+        const targetUserId = parseInt(c.req.param('userId'));
+        const currentUser = await db.getUserById(currentUserId);
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const targetUser = await db.getUserById(targetUserId);
+        if (!targetUser) {
+            return c.json({ error: 'User not found' }, 404);
+        }
+
+        const stations = await db.getAllStations();
+        const roles = await Promise.all(stations.map(async (station) => ({
+            stationId: station.id!,
+            stationName: station.name,
+            role: await resolveStationRole(db, targetUser, station.id!)
+        })));
+
+        return c.json(roles);
     });
 
     routes.post('/evaluations', authMiddleware, async (c) => {
@@ -286,7 +298,6 @@ export default function configureRoutes(routes: Hono, db: Database) {
             feedbackItems?: string[];
             overallStatus?: string;
         };
-        const testPermission = c.req.header('X-Test-Permission');
 
         const currentUser = await db.getUserById(evaluatorId);
         if (!currentUser) {
@@ -298,7 +309,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Target has already reached mastery for this station.' }, 400);
         }
 
-        const eligible = await canSubmitEvaluation(evaluatorId, body.stationId, testPermission ?? undefined);
+        const eligible = await canSubmitEvaluation(evaluatorId, body.stationId);
         if (!eligible) {
             return c.json({ error: 'You do not have sufficient station progress to submit evaluations for this station yet.' }, 403);
         }
@@ -337,21 +348,19 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.get('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
         if (!currentUser) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector || isDirectorOverride(testPermission ?? undefined));
+        const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector);
         return c.json(notifications);
     });
 
     routes.post('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -391,9 +400,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.get('/admin/overview', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
@@ -404,12 +412,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/evaluations/:userId', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
         const canViewAny = currentUser?.permFlags === PermFlags.IsDirector ||
             currentUser?.permFlags === PermFlags.IsAssistant ||
-            currentUser?.permFlags === PermFlags.IsLeadership ||
-            isElevatedOverride(testPermission ?? undefined);
+            currentUser?.permFlags === PermFlags.IsLeadership;
         if (currentUserId !== targetUserId && !canViewAny) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -417,33 +423,49 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(evaluations);
     });
 
-    // Instructor-accessible endpoint — MUST be before /stations/:id to avoid being swallowed by the param route
-    routes.get('/stations/feedback', authMiddleware, async (c) => {
-        const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
-        const currentUser = await db.getUserById(currentUserId);
-        const canView = currentUser && (
-            currentUser.permFlags >= PermFlags.IsLeadership ||
-            isElevatedOverride(testPermission ?? undefined)
-        );
-        if (!canView) return c.json({ error: 'Forbidden' }, 403);
-        const stations = await db.getAllStations();
-        return c.json(stations.map(s => ({ id: s.id, name: s.name, criteria: s.criteria, feedbackItems: s.feedbackItems })));
-    });
-
-    // Public (any authenticated user) station lookup
+    // Public (any authenticated user) station lookup — role/instructorNotes are per-caller
     routes.get('/stations/:id', authMiddleware, async (c) => {
+        const userId = (c as any).userId as number;
         const stationId = parseInt(c.req.param('id'));
-        const station = await db.getStationById(stationId);
-        if (!station) {
-            return c.json({ id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [] });
+        const currentUser = await db.getUserById(userId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
         }
-        return c.json(station);
+
+        const station = await db.getStationById(stationId);
+        const base = station ?? { id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [], instructorNotes: [] };
+        const role = await resolveStationRole(db, currentUser, stationId);
+
+        return c.json({
+            id: base.id,
+            name: base.name,
+            criteria: base.criteria,
+            feedbackItems: base.feedbackItems,
+            role,
+            ...(role !== 'participant' ? { instructorNotes: base.instructorNotes } : {})
+        });
     });
 
     routes.get('/stations', authMiddleware, async (c) => {
+        const userId = (c as any).userId as number;
+        const currentUser = await db.getUserById(userId);
+        if (!currentUser) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
         const stations = await db.getAllStations();
-        return c.json(stations);
+        const withRoles = await Promise.all(stations.map(async (station) => {
+            const role = await resolveStationRole(db, currentUser, station.id!);
+            return {
+                id: station.id,
+                name: station.name,
+                criteria: station.criteria,
+                feedbackItems: station.feedbackItems,
+                role,
+                ...(role !== 'participant' ? { instructorNotes: station.instructorNotes } : {})
+            };
+        }));
+        return c.json(withRoles);
     });
 
     routes.get('/stations/:id/queue', authMiddleware, async (c) => {
@@ -542,7 +564,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
 
-        const eligible = await canSubmitEvaluation(currentUserId, stationId, c.req.header('X-Test-Permission') ?? undefined);
+        const eligible = await canSubmitEvaluation(currentUserId, stationId);
         if (!eligible) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -582,36 +604,33 @@ export default function configureRoutes(routes: Hono, db: Database) {
 
     routes.post('/stations', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
-        const body = await c.req.json() as { name: string; criteria: string[]; feedbackItems?: string[] };
+        const body = await c.req.json() as { name: string; criteria: string[]; feedbackItems?: string[]; instructorNotes?: string[] };
         const station = await db.createStation(body);
         return c.json(station);
     });
 
     routes.put('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 
         const stationId = parseInt(c.req.param('id'));
-        const updates = await c.req.json() as { name?: string; criteria?: string[]; feedbackItems?: string[] };
+        const updates = await c.req.json() as { name?: string; criteria?: string[]; feedbackItems?: string[]; instructorNotes?: string[] };
         await db.updateStation(stationId, updates);
         return c.json({ success: true });
     });
 
     routes.delete('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
-        const testPermission = c.req.header('X-Test-Permission');
         const currentUser = await db.getUserById(currentUserId);
-        if (!currentUser || (currentUser.permFlags !== PermFlags.IsDirector && !isDirectorOverride(testPermission ?? undefined))) {
+        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 

@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
-import PermissionManager, { UserPermission } from "@client/stores/PermissionManager";
 import UserManager from '@client/stores/UserManager';
 import { useState, useEffect } from "react";
 import {
@@ -40,7 +39,6 @@ const getStatusLabel = (status: EvaluationStatus) => {
 // Assumed to be logged in if this page is loaded.
 export default function HomePage() {
     const nav = useNavigate();
-    const [permission, setPermission] = useState(PermissionManager.permission);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
@@ -79,19 +77,13 @@ export default function HomePage() {
         setNotifications(latestNotifications);
     };
 
-    const handlePermissionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newPermission = e.target.value as UserPermission;
-        PermissionManager.permission = newPermission;
-        setPermission(newPermission);
-    };
-
     const getStationStatus = (stationId: number): EvaluationStatus => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
         return scoreToStatus(latest?.score);
     };
 
     const isStationUnlocked = (stationId: number): boolean => {
-        if (UserManager.isTA || UserManager.isDirector || PermissionManager.canViewAdmin()) {
+        if (UserManager.isElevated || UserManager.isDirector) {
             return true;
         }
         const sortedStations = [...stations].sort((a, b) => a.id - b.id);
@@ -106,27 +98,9 @@ export default function HomePage() {
         <>
             <section id="center">
                 <div>
-                    <div className="header-with-dropdown">
-                        <div>
-                            <h1>Home</h1>
-                            <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
-                        </div>
-                        <div className="permission-selector">
-                            <label htmlFor="permission">Override Permission (temporary):</label>
-                            <select
-                                id="permission"
-                                value={permission}
-                                onChange={handlePermissionChange}
-                                className="permission-dropdown"
-                            >
-                                {PermissionManager.getAllPermissions().map(perm => (
-                                    <option key={perm} value={perm}>
-                                        {PermissionManager.getPermissionLabel(perm as UserPermission)}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="permission-note">This override is only for testing evaluator and director screens. It will be removed later.</p>
-                        </div>
+                    <div>
+                        <h1>Home</h1>
+                        <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
                     </div>
 
                     {notifications.length > 0 && (() => {
@@ -181,7 +155,7 @@ export default function HomePage() {
                             </div>
                         )}
                         {!stationsError && stations.length === 0 && (
-                            PermissionManager.canViewAdmin() ? (
+                            UserManager.isDirector ? (
                                 <p className="no-stations-message">No stations have been set up yet. Add your first station to get started.</p>
                             ) : (
                                 <p className="no-stations-message">No stations have been set up yet. Check back once your director adds some.</p>
@@ -210,7 +184,7 @@ export default function HomePage() {
                             );
                         })}
                     </div>
-                    {PermissionManager.canViewAdmin() && (
+                    {UserManager.isDirector && (
                         <button className="new-station-btn" onClick={() => nav('/admin/stations')}>+ Manage Stations</button>
                     )}
                     <p>Press the button to Logout!</p>

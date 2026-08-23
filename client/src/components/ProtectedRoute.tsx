@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router";
-import PermissionManager from "@client/stores/PermissionManager";
 
 interface ProtectedRouteProps {
     children: ReactNode;
-    requiredPermission: (perm: typeof PermissionManager) => boolean;
+    requiredPermission: () => boolean;
     fallbackRoute?: string;
 }
 
@@ -13,7 +12,7 @@ export default function ProtectedRoute({
     requiredPermission,
     fallbackRoute = '/'
 }: ProtectedRouteProps) {
-    if (!requiredPermission(PermissionManager)) {
+    if (!requiredPermission()) {
         return <Navigate to={fallbackRoute} replace />;
     }
 

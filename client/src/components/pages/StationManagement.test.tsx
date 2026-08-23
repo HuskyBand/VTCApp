@@ -15,6 +15,7 @@ vi.mock('../BottomNav', () => ({
 vi.mock('@client/stores/UserManager', () => ({
     default: {
         isLoggedIn: true,
+        isDirector: true,
         getStations: vi.fn(),
         createStation: vi.fn(),
         updateStation: vi.fn(),
@@ -22,24 +23,16 @@ vi.mock('@client/stores/UserManager', () => ({
     },
 }));
 
-vi.mock('@client/stores/PermissionManager', () => ({
-    default: {
-        canViewAdmin: vi.fn(),
-    },
-}));
-
 import UserManager from '@client/stores/UserManager';
-import PermissionManager from '@client/stores/PermissionManager';
 import StationManagement from './StationManagement';
 
 const mockedUserManager = vi.mocked(UserManager);
-const mockedPermissionManager = vi.mocked(PermissionManager);
 
 describe('StationManagement', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockedUserManager.isLoggedIn = true;
-        mockedPermissionManager.canViewAdmin.mockReturnValue(true);
+        mockedUserManager.isDirector = true;
         mockedUserManager.getStations.mockResolvedValue([
             {
                 id: 1,
@@ -64,7 +57,7 @@ describe('StationManagement', () => {
     });
 
     it('redirects non-admin users', async () => {
-        mockedPermissionManager.canViewAdmin.mockReturnValue(false);
+        mockedUserManager.isDirector = false;
 
         render(<StationManagement />);
 

@@ -145,7 +145,7 @@ describe('configureRoutes', () => {
         expect(queue[0].position).toBe(1);
     });
 
-    it('blocks non-eligible evaluation submit unless override header is set', async () => {
+    it('blocks non-eligible evaluation submit but allows leadership regardless of station progress', async () => {
         const evaluator = await registerAndToken('evaluator-user');
         const target = await registerAndToken('target-user');
 
@@ -167,12 +167,13 @@ describe('configureRoutes', () => {
         });
         expect(blocked.status).toBe(403);
 
+        await db.updateUser(evaluator.user.id, { permFlags: PermFlags.IsLeadership });
+
         const allowed = await app.request('/v1/evaluations', {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${evaluator.token}`,
                 'Content-Type': 'application/json',
-                'X-Test-Permission': 'evaluator',
             },
             body: JSON.stringify({
                 userId: target.user.id,
@@ -188,6 +189,30 @@ describe('configureRoutes', () => {
 
         const evaluationBody = (await allowed.json()) as { id: number };
         expect(evaluationBody.id).toBeTypeOf('number');
+    });
+
+    it('rejects a self-escalation attempt via a spoofed permission header', async () => {
+        const member = await registerAndToken('spoof-user');
+        const target = await registerAndToken('spoof-target');
+
+        const response = await app.request('/v1/evaluations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${member.token}`,
+                'Content-Type': 'application/json',
+                'X-Test-Permission': 'dr_jahlas',
+            },
+            body: JSON.stringify({
+                userId: target.user.id,
+                stationId: 1,
+                score: 80,
+                comments: 'Should not be allowed',
+                criteria: ['mastery'],
+                feedbackItems: [],
+                overallStatus: 'mastery',
+            }),
+        });
+        expect(response.status).toBe(403);
     });
 
     it('returns current user via auth/me and updates profile without allowing permission escalation', async () => {
@@ -247,40 +272,6 @@ describe('configureRoutes', () => {
         expect(memberList.status).toBe(200);
         const notifications = (await memberList.json()) as Array<{ title: string }>;
         expect(notifications.some((n) => n.title === 'Reminder')).toBe(true);
-    });
-
-    it('permits stations/feedback only for elevated roles or override', async () => {
-        const director = await registerAndToken('director-feedback', true);
-        const member = await registerAndToken('member-feedback');
-
-        await app.request('/v1/stations', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${director.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: 'Feedback Station',
-                criteria: ['Tone'],
-                feedbackItems: ['Rhythm'],
-            }),
-        });
-
-        const memberDenied = await app.request('/v1/stations/feedback', {
-            headers: { Authorization: `Bearer ${member.token}` },
-        });
-        expect(memberDenied.status).toBe(403);
-
-        const memberOverride = await app.request('/v1/stations/feedback', {
-            headers: {
-                Authorization: `Bearer ${member.token}`,
-                'X-Test-Permission': 'instructor',
-            },
-        });
-        expect(memberOverride.status).toBe(200);
-        const stations = (await memberOverride.json()) as Array<{ name: string; feedbackItems: string[] }>;
-        expect(stations.some((s) => s.name === 'Feedback Station')).toBe(true);
-        expect(stations[0].feedbackItems).toBeDefined();
     });
 
     it('pulls next queue member and removes them from queue', async () => {
@@ -350,7 +341,7 @@ describe('configureRoutes', () => {
         expect(queue).toHaveLength(1);
     });
 
-    it('forbids non-elevated users from viewing other users evaluations', async () => {
+    it('forbids non-elevated users from viewing other users evaluations, but allows real leadership', async () => {
         const memberA = await registerAndToken('member-evals-a');
         const memberB = await registerAndToken('member-evals-b');
 
@@ -359,13 +350,25 @@ describe('configureRoutes', () => {
         });
         expect(forbidden.status).toBe(403);
 
-        const allowedWithOverride = await app.request(`/v1/evaluations/${memberB.user.id}`, {
+        await db.updateUser(memberA.user.id, { permFlags: PermFlags.IsLeadership });
+
+        const allowed = await app.request(`/v1/evaluations/${memberB.user.id}`, {
+            headers: { Authorization: `Bearer ${memberA.token}` },
+        });
+        expect(allowed.status).toBe(200);
+    });
+
+    it('rejects a spoofed permission header when viewing other users evaluations', async () => {
+        const memberA = await registerAndToken('spoof-evals-a');
+        const memberB = await registerAndToken('spoof-evals-b');
+
+        const response = await app.request(`/v1/evaluations/${memberB.user.id}`, {
             headers: {
                 Authorization: `Bearer ${memberA.token}`,
-                'X-Test-Permission': 'evaluator',
+                'X-Test-Permission': 'elevated',
             },
         });
-        expect(allowedWithOverride.status).toBe(200);
+        expect(response.status).toBe(403);
     });
 
     it('allows director to update and delete station but forbids member', async () => {

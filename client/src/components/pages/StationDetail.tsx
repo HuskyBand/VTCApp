@@ -3,6 +3,7 @@ import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
 import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
+import type { StationRole } from "@api/station/StationRole";
 
 type StationEvaluation = {
     id?: number;
@@ -20,7 +21,7 @@ export default function StationDetail() {
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
-    const [station, setStation] = useState<{ id: number; name: string; criteria: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [] });
+    const [station, setStation] = useState<{ id: number; name: string; criteria: string[]; role: StationRole; instructorNotes?: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [], role: 'participant' });
 
     useEffect(() => {
         if (!id) return;
@@ -186,6 +187,17 @@ export default function StationDetail() {
                             <ul>
                                 {station.criteria.map((c) => (
                                     <li key={c}>{c}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {station.role !== 'participant' && station.instructorNotes && station.instructorNotes.length > 0 && (
+                        <div className="instructor-notes-summary">
+                            <h3>Instructor Notes</h3>
+                            <ul>
+                                {station.instructorNotes.map((note) => (
+                                    <li key={note}>{note}</li>
                                 ))}
                             </ul>
                         </div>

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import PermissionManager, { UserPermission } from './PermissionManager';
 import { PermFlags, type User } from '@api/user/User';
 
 vi.mock('@client/http/HttpClient', () => {
@@ -35,7 +34,6 @@ describe('UserManager', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
-        PermissionManager.permission = UserPermission.BandMember;
         UserManager.clear();
     });
 
@@ -44,7 +42,7 @@ describe('UserManager', () => {
 
         expect(UserManager.isLoggedIn).toBe(true);
         expect(UserManager.currentUser.username).toBe('alice');
-        expect(PermissionManager.permission).toBe(UserPermission.DrJahlas);
+        expect(UserManager.isDirector).toBe(true);
 
         const raw = localStorage.getItem('user_data');
         expect(raw).toBeTruthy();

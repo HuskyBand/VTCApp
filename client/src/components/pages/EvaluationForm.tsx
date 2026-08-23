@@ -2,11 +2,9 @@ import { useParams, useSearchParams, useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
 import { useState, useEffect } from "react";
 import UserManager from "@client/stores/UserManager";
-import PermissionManager from "@client/stores/PermissionManager";
 import type { User } from "@api/user/User";
+import type { StationRole } from "@api/station/StationRole";
 import {
-    canEvaluateStation,
-    canTeachStation,
     getLatestStationEvaluation,
     getStatusLabel,
     isMasteryLocked,
@@ -41,18 +39,14 @@ export default function EvaluationForm() {
     const [message, setMessage] = useState('');
     const [myEvaluations, setMyEvaluations] = useState<EvaluationRecord[]>([]);
     const [targetEvaluations, setTargetEvaluations] = useState<EvaluationRecord[]>([]);
+    const [stationRole, setStationRole] = useState<StationRole>('participant');
 
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
         loadUsers();
         loadMyEvaluations();
-        UserManager.getStation(Number(stationId)).then((station) => {
-            if (!station) return;
-            setStationName(station.name);
-            setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
-            setFeedbackOptions(station.feedbackItems ?? []);
-        });
+        loadStationCriteria();
     }, [stationId]);
 
     useEffect(() => {
@@ -62,6 +56,16 @@ export default function EvaluationForm() {
         }
         UserManager.getEvaluationsForUser(selectedUser.id!).then(setTargetEvaluations);
     }, [selectedUser]);
+
+    const loadStationCriteria = async () => {
+        const station = await UserManager.getStation(Number(stationId));
+        if (station) {
+            setStationName(station.name);
+            setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
+            setFeedbackOptions(station.feedbackItems ?? []);
+            setStationRole(station.role);
+        }
+    };
 
     const loadUsers = async () => {
         try {
@@ -128,11 +132,7 @@ export default function EvaluationForm() {
     };
 
     const currentStationId = Number(stationId);
-    const currentEligibility =
-        PermissionManager.canViewAdmin() ||
-        PermissionManager.canEvaluate() ||
-        canEvaluateStation(myEvaluations, currentStationId) ||
-        canTeachStation(myEvaluations, currentStationId);
+    const currentEligibility = stationRole === 'evaluator';
     const targetAtMastery = selectedUser ? isMasteryLocked(targetEvaluations, currentStationId) : false;
 
     const overallStatus = getOverallStatus();
