@@ -2,6 +2,8 @@
 
 A VTC progress tracker for the University of Washington Husky Marching Band.
 
+Production URL: [https://hmbvtc.app/](https://hmbvtc.app/)
+
 ### How to test:
 
 Run `npm run dev:server` and `npm run dev:client` from the root directory to run both the server and client locally.
