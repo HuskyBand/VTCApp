@@ -5,12 +5,15 @@
         "ci:server": "npm --prefix ./server ci && npm --prefix ./server run typecheck && npm --prefix ./server run test:run",
         "ci:api": "npm --prefix ./packages/api ci && npm --prefix ./packages/api run typecheck",
         "ci:pr": "npm run ci:client && npm run ci:server && npm run ci:api",
+
         "dev:client": "cd ./client && npm run dev",
         "build:client": "cd ./client && npm run build",
         "start:client": "cd ./client && npm run start",
 
         "dev:server": "cd ./server && npm run dev",
         "build:server": "cd ./server && npm run build",
-        "start:server": "cd ./server && npm run start"
+        "start:server": "cd ./server && npm run start",
+
+        "install:repo": "npm --prefix ./client install && npm --prefix ./packages/api install && npm --prefix ./server install"
     }
 }
