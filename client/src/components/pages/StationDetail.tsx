@@ -4,9 +4,18 @@ import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
 import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
 
+type StationEvaluation = {
+    id?: number;
+    stationId: number;
+    score?: number;
+    comments?: string;
+    criteria?: string[];
+    createdAt?: string;
+};
+
 export default function StationDetail() {
     const { id } = useParams();
-    const [evaluations, setEvaluations] = useState<any[]>([]);
+    const [evaluations, setEvaluations] = useState<StationEvaluation[]>([]);
     const [showHistory, setShowHistory] = useState(false);
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
@@ -14,32 +23,67 @@ export default function StationDetail() {
     const [station, setStation] = useState<{ id: number; name: string; criteria: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [] });
 
     useEffect(() => {
-        loadEvaluations();
-        loadQueue();
-        loadStation();
+        if (!id) return;
+
+        const stationId = parseInt(id);
+
+        UserManager.getStation(stationId).then((data) => {
+            if (data) setStation(data);
+        });
+
+        if (UserManager.isLoggedIn) {
+            UserManager.getEvaluationsForUser(UserManager.currentUser.id!).then((userEvaluations) => {
+                const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === stationId);
+                setEvaluations(stationEvaluations);
+            });
+
+            UserManager.getStationQueue(stationId)
+                .then((queueItems) => {
+                    setQueue(queueItems);
+                    setQueueError('');
+                    if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                        setQueueMessage('');
+                    }
+                })
+                .catch(() => {
+                    setQueueError('Failed to load queue status.');
+                });
+        }
     }, [id]);
 
     // Refresh evaluations periodically
     useEffect(() => {
+        if (!id || !UserManager.isLoggedIn) return;
+
+        const stationId = parseInt(id);
         const interval = setInterval(() => {
-            loadEvaluations();
-            loadQueue();
-        }, 5000); // Refresh every 5 seconds
+            UserManager.getEvaluationsForUser(UserManager.currentUser.id!).then((userEvaluations) => {
+                const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === stationId);
+                setEvaluations(stationEvaluations);
+            });
+
+            UserManager.getStationQueue(stationId)
+                .then((queueItems) => {
+                    setQueue(queueItems);
+                    setQueueError('');
+                    if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                        setQueueMessage('');
+                    }
+                })
+                .catch(() => {
+                    setQueueError('Failed to load queue status.');
+                });
+        }, 5000);
+
         return () => clearInterval(interval);
-    }, []);
+    }, [id]);
 
     const loadEvaluations = async () => {
         if (UserManager.isLoggedIn) {
             const userEvaluations = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
-            const stationEvaluations = userEvaluations.filter((evaluation: any) => evaluation.stationId === parseInt(id!));
+            const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === parseInt(id!));
             setEvaluations(stationEvaluations);
         }
-    };
-
-    const loadStation = async () => {
-        if (!id) return;
-        const data = await UserManager.getStation(Number(id));
-        if (data) setStation(data);
     };
 
     const loadQueue = async () => {
@@ -55,7 +99,7 @@ export default function StationDetail() {
             if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
                 setQueueMessage('');
             }
-        } catch (err) {
+        } catch {
             setQueueError('Failed to load queue status.');
         }
     };
@@ -196,7 +240,7 @@ export default function StationDetail() {
                                     <div className="evaluation-item latest">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluations[0].createdAt).toLocaleDateString()}
+                                                {evaluations[0].createdAt ? new Date(evaluations[0].createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluations[0].criteria && evaluations[0].criteria.length > 0 ? (
@@ -248,7 +292,7 @@ export default function StationDetail() {
                                     <div key={evaluation.id} className="evaluation-item">
                                         <div className="evaluation-header">
                                             <span className="evaluation-date">
-                                                {new Date(evaluation.createdAt).toLocaleDateString()}
+                                                {evaluation.createdAt ? new Date(evaluation.createdAt).toLocaleDateString() : 'Unknown date'}
                                             </span>
                                         </div>
                                         {evaluation.criteria && evaluation.criteria.length > 0 ? (

@@ -10,7 +10,7 @@ export default function LogoutPage() {
 
     React.useEffect(() => {
         async function logoutActually() {
-            let response = await http.post(Endpoints.AUTH_LOGOUT);
+            const response = await http.post(Endpoints.AUTH_LOGOUT);
 
             if (response.ok) {
                 UserManager.clear(); // Is this necessary?
@@ -27,11 +27,11 @@ export default function LogoutPage() {
         });
     }, []);
 
-	React.useEffect(() => {
+    React.useEffect(() => {
         if (redirectState) {
             nav('/');
         }
-	}, [redirectState]);
+    }, [redirectState, nav]);
 
     return (
     <>

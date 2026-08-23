@@ -47,7 +47,12 @@ export default function EvaluationForm() {
     useEffect(() => {
         loadUsers();
         loadMyEvaluations();
-        loadStationCriteria();
+        UserManager.getStation(Number(stationId)).then((station) => {
+            if (!station) return;
+            setStationName(station.name);
+            setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
+            setFeedbackOptions(station.feedbackItems ?? []);
+        });
     }, [stationId]);
 
     useEffect(() => {
@@ -57,15 +62,6 @@ export default function EvaluationForm() {
         }
         UserManager.getEvaluationsForUser(selectedUser.id!).then(setTargetEvaluations);
     }, [selectedUser]);
-
-    const loadStationCriteria = async () => {
-        const station = await UserManager.getStation(Number(stationId));
-        if (station) {
-            setStationName(station.name);
-            setCriteria(station.criteria?.length > 0 ? station.criteria.map((name) => ({ name, level: 'developing' })) : []);
-            setFeedbackOptions(station.feedbackItems ?? []);
-        }
-    };
 
     const loadUsers = async () => {
         try {
@@ -181,7 +177,7 @@ export default function EvaluationForm() {
             } else {
                 setMessage('Failed to submit evaluation. Please try again.');
             }
-        } catch (error) {
+        } catch {
             setMessage('An error occurred while submitting. Please try again.');
         }
 
