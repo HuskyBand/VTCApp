@@ -25,7 +25,7 @@ export default function ProfileSettingsPage() {
             firstName: user.firstName,
             lastName: user.lastName
         });
-    }, []);
+    }, [nav]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({

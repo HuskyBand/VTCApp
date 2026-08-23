@@ -29,7 +29,7 @@ export default function PermissionManagementPage() {
         }
 
         loadUsers();
-    }, []);
+    }, [nav]);
 
     const loadUsers = async () => {
         try {

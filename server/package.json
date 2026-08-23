@@ -23,5 +23,8 @@
   "devDependencies": {
     "@types/node": "^20.19.39",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }

@@ -37,9 +37,13 @@ export default function DirectorOverview() {
     useEffect(() => {
         if (!UserManager.isLoggedIn || !PermissionManager.canViewAdmin()) { nav('/'); return; }
         loadAll();
-        startSSE();
-        return () => sseRef.current?.close();
-    }, []);
+        const stopPolling = startSSE();
+        const sse = sseRef.current;
+        return () => {
+            stopPolling();
+            sse?.close();
+        };
+    }, [nav]);
 
     const startSSE = () => {
         // Build SSE URL with auth token via query param isn't ideal; use a ping-based approach via the existing token

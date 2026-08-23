@@ -59,13 +59,13 @@ export default function EvaluateSelectStation() {
         if (selectedStation || stations.length === 0) return;
         const redirectStationId = Number(searchParams.get('stationId'));
         if (!redirectStationId) return;
-        const allIds = sortedStationIds();
+        const allIds = [...stations].sort((a, b) => a.id - b.id).map((s) => s.id);
         const canEvaluate = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canEvaluateStation(evaluations, redirectStationId, allIds);
         const canTeach = PermissionManager.canViewAdmin() || PermissionManager.canEvaluate() || canTeachStation(evaluations, redirectStationId, allIds);
         if ((canEvaluate || canTeach) && stations.some((s) => s.id === redirectStationId)) {
             setSelectedStation(redirectStationId);
         }
-    }, [stations, evaluations, searchParams]);
+    }, [selectedStation, stations, evaluations, searchParams]);
 
     useEffect(() => {
         const loadQueue = async () => {

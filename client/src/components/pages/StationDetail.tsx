@@ -23,19 +23,60 @@ export default function StationDetail() {
     const [station, setStation] = useState<{ id: number; name: string; criteria: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [] });
 
     useEffect(() => {
-        loadEvaluations();
-        loadQueue();
-        loadStation();
+        if (!id) return;
+
+        const stationId = parseInt(id);
+
+        UserManager.getStation(stationId).then((data) => {
+            if (data) setStation(data);
+        });
+
+        if (UserManager.isLoggedIn) {
+            UserManager.getEvaluationsForUser(UserManager.currentUser.id!).then((userEvaluations) => {
+                const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === stationId);
+                setEvaluations(stationEvaluations);
+            });
+
+            UserManager.getStationQueue(stationId)
+                .then((queueItems) => {
+                    setQueue(queueItems);
+                    setQueueError('');
+                    if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                        setQueueMessage('');
+                    }
+                })
+                .catch(() => {
+                    setQueueError('Failed to load queue status.');
+                });
+        }
     }, [id]);
 
     // Refresh evaluations periodically
     useEffect(() => {
+        if (!id || !UserManager.isLoggedIn) return;
+
+        const stationId = parseInt(id);
         const interval = setInterval(() => {
-            loadEvaluations();
-            loadQueue();
-        }, 5000); // Refresh every 5 seconds
+            UserManager.getEvaluationsForUser(UserManager.currentUser.id!).then((userEvaluations) => {
+                const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === stationId);
+                setEvaluations(stationEvaluations);
+            });
+
+            UserManager.getStationQueue(stationId)
+                .then((queueItems) => {
+                    setQueue(queueItems);
+                    setQueueError('');
+                    if (!queueItems.some((entry) => entry.userId === UserManager.currentUser.id)) {
+                        setQueueMessage('');
+                    }
+                })
+                .catch(() => {
+                    setQueueError('Failed to load queue status.');
+                });
+        }, 5000);
+
         return () => clearInterval(interval);
-    }, []);
+    }, [id]);
 
     const loadEvaluations = async () => {
         if (UserManager.isLoggedIn) {
@@ -43,12 +84,6 @@ export default function StationDetail() {
             const stationEvaluations = userEvaluations.filter((evaluation) => evaluation.stationId === parseInt(id!));
             setEvaluations(stationEvaluations);
         }
-    };
-
-    const loadStation = async () => {
-        if (!id) return;
-        const data = await UserManager.getStation(Number(id));
-        if (data) setStation(data);
     };
 
     const loadQueue = async () => {

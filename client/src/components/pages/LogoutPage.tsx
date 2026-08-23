@@ -27,11 +27,11 @@ export default function LogoutPage() {
         });
     }, []);
 
-	React.useEffect(() => {
+    React.useEffect(() => {
         if (redirectState) {
             nav('/');
         }
-	}, [redirectState]);
+    }, [redirectState, nav]);
 
     return (
     <>

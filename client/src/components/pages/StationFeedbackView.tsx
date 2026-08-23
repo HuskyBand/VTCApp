@@ -25,7 +25,7 @@ export default function StationFeedbackView() {
         UserManager.getStationsFeedback()
             .then(setStations)
             .catch(() => setError('Failed to load station information.'));
-    }, []);
+    }, [nav]);
 
     return (
         <>

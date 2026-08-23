@@ -25,7 +25,7 @@ export default function ProfileSetupPage() {
             lastName: user.lastName,
             instrument: user.instrument
         });
-    }, []);
+    }, [nav]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
