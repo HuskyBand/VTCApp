@@ -414,4 +414,48 @@ describe('configureRoutes', () => {
         });
         expect(directorDelete.status).toBe(200);
     });
+
+    it('shows queue notifications to members but director feed stays broadcast-only', async () => {
+        const director = await registerAndToken('director-notif-filter', true);
+        const student = await registerAndToken('student-notif-filter');
+
+        await app.request('/v1/stations', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'Filter Station', criteria: ['Tone'], feedbackItems: [] }),
+        });
+
+        await app.request('/v1/notifications', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${director.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: 'Band Notice', message: 'Reminder' }),
+        });
+
+        await app.request('/v1/stations/1/queue', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+
+        const studentNotifications = await app.request('/v1/notifications', {
+            headers: { Authorization: `Bearer ${student.token}` },
+        });
+        expect(studentNotifications.status).toBe(200);
+        const studentItems = (await studentNotifications.json()) as Array<{ category: string; title: string }>;
+        expect(studentItems.some((n) => n.category === 'queue')).toBe(true);
+        expect(studentItems.some((n) => n.category === 'broadcast')).toBe(true);
+
+        const directorNotifications = await app.request('/v1/notifications', {
+            headers: { Authorization: `Bearer ${director.token}` },
+        });
+        expect(directorNotifications.status).toBe(200);
+        const directorItems = (await directorNotifications.json()) as Array<{ category: string; title: string }>;
+        expect(directorItems.length).toBeGreaterThan(0);
+        expect(directorItems.every((n) => n.category === 'broadcast')).toBe(true);
+    });
 });
