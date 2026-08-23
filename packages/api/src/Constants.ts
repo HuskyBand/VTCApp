@@ -5,14 +5,14 @@
  * The URL to target when making API calls.
  * In production, this should be something like `https://api.example.com/`.
 */
-export const DEFAULT_BASE_API_URL: string = "http://localhost:4000";
+export const DEFAULT_BASE_API_URL: string = "http://localhost";
 
 // NOTE: Keep this consistent with the test URL above!!!
 
 /**
  * The port to use when creating the server.
 */
-export const DEFAULT_BASE_API_PORT: number = 4000;
+export const DEFAULT_BASE_API_PORT: string = "4000";
 
 /**
  * The URL to target for static resources.

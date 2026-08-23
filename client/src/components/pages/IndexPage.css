@@ -235,12 +235,6 @@
     color: var(--text-h);
 }
 
-.permission-note {
-    margin-top: 6px;
-    font-size: 12px;
-    color: var(--text-sh);
-}
-
 .user-suggestions {
     position: absolute;
     top: 100%;

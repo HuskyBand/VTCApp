@@ -1,5 +1,4 @@
 import { DEFAULT_BASE_API_URL, DEFAULT_API_VERSION } from '@api/Constants.ts';
-import TestPermissionOverride, { GlobalTier } from '@client/stores/TestPermissionOverride';
 
 export interface HttpResponse<T = unknown> {
 	ok: boolean;
@@ -19,7 +18,7 @@ export class HttpClient {
     private _onUnauthorized?: () => void;
 
     constructor() {
-        this._baseUrl = import.meta.env.VITE_API_URL || DEFAULT_BASE_API_URL;
+        this._baseUrl = import.meta.env.VITE_API_HOSTNAME ?? DEFAULT_BASE_API_URL;
         this._apiVersion = DEFAULT_API_VERSION;
     }
 
@@ -59,11 +58,6 @@ export class HttpClient {
 		if (authToken && !url.includes('://')) {
 			headers.Authorization = `Bearer ${authToken}`;
 		}
-
-        const overrideTier = TestPermissionOverride.tier;
-        if (!url.includes('://') && overrideTier && overrideTier !== GlobalTier.BandMember) {
-            headers['X-Test-Permission'] = overrideTier;
-        }
 
         if (body && !url.includes('://')) {
             if (contentType) {

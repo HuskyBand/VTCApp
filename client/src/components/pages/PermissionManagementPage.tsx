@@ -29,13 +29,13 @@ export default function PermissionManagementPage() {
         }
 
         loadUsers();
-    }, []);
+    }, [nav]);
 
     const loadUsers = async () => {
         try {
             const data = await UserManager.getAllUsers();
             setUsers(data);
-        } catch (err) {
+        } catch {
             setError('Unable to load users.');
         }
     };
@@ -44,7 +44,7 @@ export default function PermissionManagementPage() {
         try {
             await UserManager.updateUserPermissions(userId, permFlags);
             await loadUsers();
-        } catch (err) {
+        } catch {
             setError('Unable to update permission.');
         }
     };

@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  	plugins: [react()],
 	resolve: {
 		alias: [
 			{find: '@client', replacement: path.resolve(__dirname, 'src')},
@@ -17,4 +17,8 @@ export default defineConfig({
 		],
 		extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js', '.json'],
 	},
+	build: {
+	  outDir: 'dist',
+	  sourcemap: true
+	}
 })

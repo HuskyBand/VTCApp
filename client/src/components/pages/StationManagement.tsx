@@ -33,7 +33,7 @@ export default function StationManagement() {
             return;
         }
         loadStations();
-    }, []);
+    }, [nav]);
 
     const loadStations = async () => {
         try {

@@ -39,9 +39,13 @@ export default function DirectorOverview() {
     useEffect(() => {
         if (!UserManager.isLoggedIn || !UserManager.isDirector) { nav('/'); return; }
         loadAll();
-        startSSE();
-        return () => sseRef.current?.close();
-    }, []);
+        const stopPolling = startSSE();
+        const sse = sseRef.current;
+        return () => {
+            stopPolling();
+            sse?.close();
+        };
+    }, [nav]);
 
     useEffect(() => {
         setRoleUpdateError('');

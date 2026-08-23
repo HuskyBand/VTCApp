@@ -5,6 +5,7 @@ import heroImg from '@client/assets/hero.png';
 import './ExamplePage.css';
 
 import React from "react";
+import { NavLink } from 'react-router';
 
 export default function ExamplePage() {
     const [count, setCount] = React.useState(0);
@@ -42,16 +43,16 @@ export default function ExamplePage() {
             <p>Your questions, answered</p>
             <ul>
                 <li>
-                <a href="https://vite.dev/" target="_blank">
+                <NavLink to="https://vite.dev/" target="_blank">
                     <img className="logo" src={viteLogo} alt="" />
                     Explore Vite
-                </a>
+                </NavLink>
                 </li>
                 <li>
-                <a href="https://react.dev/" target="_blank">
+                <NavLink to="https://react.dev/" target="_blank">
                     <img className="button-icon" src={reactLogo} alt="" />
                     Learn more
-                </a>
+                </NavLink>
                 </li>
             </ul>
             </div>
@@ -63,7 +64,7 @@ export default function ExamplePage() {
             <p>Join the Vite community</p>
             <ul>
                 <li>
-                <a href="https://github.com/vitejs/vite" target="_blank">
+                <NavLink to="https://github.com/vitejs/vite" target="_blank">
                     <svg
                     className="button-icon"
                     role="presentation"
@@ -72,10 +73,10 @@ export default function ExamplePage() {
                     <use href="/icons.svg#github-icon"></use>
                     </svg>
                     GitHub
-                </a>
+                </NavLink>
                 </li>
                 <li>
-                <a href="https://chat.vite.dev/" target="_blank">
+                <NavLink to="https://chat.vite.dev/" target="_blank">
                     <svg
                     className="button-icon"
                     role="presentation"
@@ -84,10 +85,10 @@ export default function ExamplePage() {
                     <use href="/icons.svg#discord-icon"></use>
                     </svg>
                     Discord
-                </a>
+                </NavLink>
                 </li>
                 <li>
-                <a href="https://x.com/vite_js" target="_blank">
+                <NavLink to="https://x.com/vite_js" target="_blank">
                     <svg
                     className="button-icon"
                     role="presentation"
@@ -96,10 +97,10 @@ export default function ExamplePage() {
                     <use href="/icons.svg#x-icon"></use>
                     </svg>
                     X.com
-                </a>
+                </NavLink>
                 </li>
                 <li>
-                <a href="https://bsky.app/profile/vite.dev" target="_blank">
+                <NavLink to="https://bsky.app/profile/vite.dev" target="_blank">
                     <svg
                     className="button-icon"
                     role="presentation"
@@ -108,7 +109,7 @@ export default function ExamplePage() {
                     <use href="/icons.svg#bluesky-icon"></use>
                     </svg>
                     Bluesky
-                </a>
+                </NavLink>
                 </li>
             </ul>
             </div>

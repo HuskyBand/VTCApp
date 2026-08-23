@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
-import TestPermissionOverride, { GlobalTier } from "@client/stores/TestPermissionOverride";
 import UserManager from '@client/stores/UserManager';
 import { useState, useEffect } from "react";
 import {
@@ -40,7 +39,6 @@ const getStatusLabel = (status: EvaluationStatus) => {
 // Assumed to be logged in if this page is loaded.
 export default function HomePage() {
     const nav = useNavigate();
-    const [tier, setTier] = useState(TestPermissionOverride.tier);
     const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
@@ -79,12 +77,6 @@ export default function HomePage() {
         setNotifications(latestNotifications);
     };
 
-    const handleTierChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newTier = e.target.value as GlobalTier;
-        TestPermissionOverride.tier = newTier;
-        setTier(newTier);
-    };
-
     const getStationStatus = (stationId: number): EvaluationStatus => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
         return scoreToStatus(latest?.score);
@@ -106,27 +98,9 @@ export default function HomePage() {
         <>
             <section id="center">
                 <div>
-                    <div className="header-with-dropdown">
-                        <div>
-                            <h1>Home</h1>
-                            <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
-                        </div>
-                        <div className="permission-selector">
-                            <label htmlFor="permission">Override Permission (temporary):</label>
-                            <select
-                                id="permission"
-                                value={tier}
-                                onChange={handleTierChange}
-                                className="permission-dropdown"
-                            >
-                                {TestPermissionOverride.getAllTiers().map(t => (
-                                    <option key={t} value={t}>
-                                        {TestPermissionOverride.getLabel(t)}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="permission-note">This override is only for testing evaluator and director screens. It will be removed later.</p>
-                        </div>
+                    <div>
+                        <h1>Home</h1>
+                        <h2>Welcome, {UserManager.currentUser.firstName}!</h2>
                     </div>
 
                     {notifications.length > 0 && (() => {

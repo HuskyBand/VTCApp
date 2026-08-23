@@ -6,9 +6,9 @@
   "author": "",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "hono": "^4.12.12"
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

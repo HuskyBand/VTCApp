@@ -51,106 +51,108 @@ export class Database {
     }
 
     private initTables(): void {
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                firstName TEXT NOT NULL,
-                lastName TEXT NOT NULL,
-                instrument TEXT NOT NULL,
-                permFlags INTEGER NOT NULL DEFAULT 0,
-                passwordHash TEXT NOT NULL
-            )
-        `);
+        this.db.serialize(() => {
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    firstName TEXT NOT NULL,
+                    lastName TEXT NOT NULL,
+                    instrument TEXT NOT NULL,
+                    permFlags INTEGER NOT NULL DEFAULT 0,
+                    passwordHash TEXT NOT NULL
+                )
+            `);
 
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS evaluations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                userId INTEGER NOT NULL,
-                evaluatorId INTEGER NOT NULL,
-                stationId INTEGER NOT NULL,
-                score INTEGER,
-                comments TEXT,
-                criteria TEXT,
-                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (userId) REFERENCES users(id),
-                FOREIGN KEY (evaluatorId) REFERENCES users(id)
-            )
-        `);
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS evaluations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    userId INTEGER NOT NULL,
+                    evaluatorId INTEGER NOT NULL,
+                    stationId INTEGER NOT NULL,
+                    score INTEGER,
+                    comments TEXT,
+                    criteria TEXT,
+                    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (userId) REFERENCES users(id),
+                    FOREIGN KEY (evaluatorId) REFERENCES users(id)
+                )
+            `);
 
-        this.db.all('PRAGMA table_info(evaluations)', [], (err, rows: any[]) => {
-            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
-                this.db.run('ALTER TABLE evaluations ADD COLUMN criteria TEXT');
-            }
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS stations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    criteria TEXT NOT NULL, -- JSON array of criteria
+                    feedbackItems TEXT NOT NULL DEFAULT '[]',
+                    instructorNotes TEXT NOT NULL DEFAULT '[]',
+                    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    senderId INTEGER NOT NULL,
+                    senderName TEXT NOT NULL,
+                    recipientId INTEGER,
+                    category TEXT NOT NULL DEFAULT 'general',
+                    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (senderId) REFERENCES users(id),
+                    FOREIGN KEY (recipientId) REFERENCES users(id)
+                )
+            `);
+
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS station_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    stationId INTEGER NOT NULL,
+                    userId INTEGER NOT NULL,
+                    requestedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT NOT NULL DEFAULT 'waiting',
+                    FOREIGN KEY (stationId) REFERENCES stations(id),
+                    FOREIGN KEY (userId) REFERENCES users(id),
+                    UNIQUE (stationId, userId)
+                )
+            `);
+
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS station_role_overrides (
+                    userId INTEGER NOT NULL,
+                    stationId INTEGER NOT NULL,
+                    role TEXT NOT NULL CHECK(role IN ('instructor', 'evaluator')),
+                    PRIMARY KEY (userId, stationId),
+                    FOREIGN KEY (userId) REFERENCES users(id)
+                )
+            `);
+
+            this.db.all('PRAGMA table_info(evaluations)', [], (err, rows: any[]) => {
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
+                    this.db.run('ALTER TABLE evaluations ADD COLUMN criteria TEXT');
+                }
+            });
+
+            this.db.all('PRAGMA table_info(notifications)', [], (err, rows: any[]) => {
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
+                    this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
+                }
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'category')) {
+                    this.db.run("ALTER TABLE notifications ADD COLUMN category TEXT NOT NULL DEFAULT 'general'");
+                }
+            });
+
+            this.db.all('PRAGMA table_info(stations)', [], (err, rows: any[]) => {
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'feedbackItems')) {
+                    this.db.run("ALTER TABLE stations ADD COLUMN feedbackItems TEXT NOT NULL DEFAULT '[]'");
+                }
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'instructorNotes')) {
+                    this.db.run("ALTER TABLE stations ADD COLUMN instructorNotes TEXT NOT NULL DEFAULT '[]'");
+                }
+            });
         });
-
-        this.db.all('PRAGMA table_info(notifications)', [], (err, rows: any[]) => {
-            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'recipientId')) {
-                this.db.run('ALTER TABLE notifications ADD COLUMN recipientId INTEGER');
-            }
-            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'category')) {
-                this.db.run("ALTER TABLE notifications ADD COLUMN category TEXT NOT NULL DEFAULT 'general'");
-            }
-        });
-
-        this.db.all('PRAGMA table_info(stations)', [], (err, rows: any[]) => {
-            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'feedbackItems')) {
-                this.db.run("ALTER TABLE stations ADD COLUMN feedbackItems TEXT NOT NULL DEFAULT '[]'");
-            }
-            if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'instructorNotes')) {
-                this.db.run("ALTER TABLE stations ADD COLUMN instructorNotes TEXT NOT NULL DEFAULT '[]'");
-            }
-        });
-
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS stations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                criteria TEXT NOT NULL, -- JSON array of criteria
-                feedbackItems TEXT NOT NULL DEFAULT '[]',
-                instructorNotes TEXT NOT NULL DEFAULT '[]',
-                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS notifications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                message TEXT NOT NULL,
-                senderId INTEGER NOT NULL,
-                senderName TEXT NOT NULL,
-                recipientId INTEGER,
-                category TEXT NOT NULL DEFAULT 'general',
-                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (senderId) REFERENCES users(id),
-                FOREIGN KEY (recipientId) REFERENCES users(id)
-            )
-        `);
-
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS station_queue (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                stationId INTEGER NOT NULL,
-                userId INTEGER NOT NULL,
-                requestedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                status TEXT NOT NULL DEFAULT 'waiting',
-                FOREIGN KEY (stationId) REFERENCES stations(id),
-                FOREIGN KEY (userId) REFERENCES users(id),
-                UNIQUE (stationId, userId)
-            )
-        `);
-
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS station_role_overrides (
-                userId INTEGER NOT NULL,
-                stationId INTEGER NOT NULL,
-                role TEXT NOT NULL CHECK(role IN ('instructor', 'evaluator')),
-                PRIMARY KEY (userId, stationId),
-                FOREIGN KEY (userId) REFERENCES users(id)
-            )
-        `);
     }
 
     async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User & { id: number }> {
@@ -668,6 +670,30 @@ export class Database {
                     resolve();
                 }
             );
+        });
+    }
+
+    close(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.close((err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+
+    ready(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.get('SELECT 1 as ok', [], (err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
         });
     }
 }
