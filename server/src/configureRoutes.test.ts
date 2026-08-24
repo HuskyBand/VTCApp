@@ -82,9 +82,9 @@ async function registerAndToken(username: string, isDirector = false): Promise<R
 
     // TODO: Should be masked with LevelMask if we add more flags.
     if (isDirector) {
-        expect(body.user.permFlags, "Permission level should be IsDirector").toBe(PermFlags.IsDirector);
+        expect(body.user.permFlags, "Permission level should be IsDirector").toStrictEqual(PermFlags.IsDirector);
     } else {
-        expect(body.user.permFlags, "Permission level should be IsBandMember").toBe(PermFlags.IsBandMember);
+        expect(body.user.permFlags, "Permission level should be IsBandMember").toStrictEqualaq(PermFlags.IsBandMember);
     }
 
     return body;
