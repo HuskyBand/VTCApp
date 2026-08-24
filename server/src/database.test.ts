@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { Database } from './database';
-import { PermFlags } from '@api/user/User';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
