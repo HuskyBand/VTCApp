@@ -9,6 +9,10 @@ import { resolveStationRole } from './stationRole';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
+// NOTE: Default path should be in the root directory so it can be accessed by the CLI in testing.
+const DEFAULT_DB_PATH = "../vtc.db";
+export const DB_PATH = process.env.DB_PATH ?? DEFAULT_DB_PATH;
+
 // SSE broadcast: maps userId -> send function (null userId = broadcast to all)
 const sseClients = new Map<number, Set<(data: string) => void>>();
 
@@ -30,6 +34,26 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.post('/auth/register', async (c) => {
         try {
             const body = await c.req.json() as RegisterPayload;
+            const perms = await db.getPermissionForRegistrationCode(body.registerCode);
+            var permFlags: PermFlags;
+
+            switch (perms) {
+                case 'member':
+                    permFlags = PermFlags.IsBandMember;
+                    break;
+                case 'leadership':
+                    permFlags = PermFlags.IsLeadership;
+                    break;
+                case 'assistant':
+                    permFlags = PermFlags.IsAssistant;
+                    break;
+                case 'director':
+                    permFlags = PermFlags.IsDirector;
+                    break;
+                default: // Should catch any cases where `perms` does not match the spec for some reason.
+                    return c.json({ error: 'Unable to register; invalid registration code.' }, 400);
+            }
+
             const user = await db.createUser({
                 username: body.username,
                 password: body.password,
@@ -37,15 +61,22 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 firstName: body.firstName,
                 lastName: body.lastName,
                 instrument: body.instrument,
-                permFlags: PermFlags.IsBandMember
+                permFlags: permFlags
             });
-            const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+
+            // NOTE: Should not be exactly 24h since users could get logged out mid-session the next day.
+            const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '72h' });
             return c.json({ token, user } as LoginResponse);
         } catch (error) {
-            const message = error instanceof Error && error.message.includes('UNIQUE constraint failed')
-                ? 'Unable to register; email or username is already in use.'
-                : 'Registration failed';
-            return c.json({ error: message }, 400);
+            if (error instanceof Error) {
+                console.error(error);
+
+                if (error.message.includes('UNIQUE constraint failed')) {
+                    return c.json({ error: 'Unable to register; email or username is already in use.' }, 400);
+                }
+            }
+            
+            return c.json({ error: 'Registration failed.' }, 400);
         }
     });
 
@@ -233,11 +264,15 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const userId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('id'));
         const currentUser = await db.getUserById(userId);
+
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
+
         const { permFlags } = await c.req.json() as { permFlags: number };
         await db.updateUser(targetUserId, { permFlags });
+
         return c.json({ success: true });
     });
 
@@ -246,6 +281,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const targetUserId = parseInt(c.req.param('userId'));
         const stationId = parseInt(c.req.param('stationId'));
         const currentUser = await db.getUserById(currentUserId);
+
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -268,6 +305,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -349,10 +388,12 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+
         if (!currentUser) {
             return c.json({ error: 'Unauthorized' }, 401);
         }
-
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         const notifications = await db.getNotificationsForUser(currentUserId, currentUser.permFlags === PermFlags.IsDirector);
         return c.json(notifications);
     });
@@ -360,6 +401,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.post('/notifications', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -401,6 +444,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.get('/admin/overview', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -413,6 +458,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const currentUserId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('userId'));
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         const canViewAny = currentUser?.permFlags === PermFlags.IsDirector ||
             currentUser?.permFlags === PermFlags.IsAssistant ||
             currentUser?.permFlags === PermFlags.IsLeadership;
@@ -605,6 +652,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.post('/stations', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -617,6 +666,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.put('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+        
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }
@@ -630,6 +681,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
     routes.delete('/stations/:id', authMiddleware, async (c) => {
         const currentUserId = (c as any).userId as number;
         const currentUser = await db.getUserById(currentUserId);
+
+        // TODO: Should be masked with LevelMask if we add more flags.
         if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
             return c.json({ error: 'Forbidden' }, 403);
         }

@@ -11,7 +11,8 @@ export type RegisterPayload = {
     email: string,
     firstName: string,
     lastName: string,
-    instrument: string
+    instrument: string,
+    registerCode: string
 }
 
 export type LoginWithTokenPayload = {

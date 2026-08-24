@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import bcrypt from 'bcryptjs';
 import type { User } from '@api/user/User';
+import assert from 'assert';
 
 const sqlite = sqlite3.verbose();
 
@@ -42,10 +43,17 @@ export type Evaluation = {
     createdAt?: string;
 };
 
+export type RegistrationPermission = 'member' | 'leadership' | 'assistant' | 'director';
+
+export type RegistrationCode = {
+    code: string,
+    perm: RegistrationPermission
+}
+
 export class Database {
     private db: sqlite3.Database;
 
-    constructor(dbPath: string = './vtc.db') {
+    constructor(dbPath: string) {
         this.db = new sqlite.Database(dbPath);
         this.initTables();
     }
@@ -129,6 +137,20 @@ export class Database {
                 )
             `);
 
+            // NOTE: Keep the role field in sync with RegistrationPermission
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS registration_codes (
+                    code CHAR(5) NOT NULL,
+                    perm TEXT NOT NULL CHECK(perm IN ('member', 'leadership', 'assistant', 'director')),
+                    PRIMARY KEY (perm),
+                    UNIQUE (perm)
+                )
+            `, (err) => {
+                if (err) {
+                    console.error(`Create registration_codes: ${err.message}`);
+                }
+            });
+
             this.db.all('PRAGMA table_info(evaluations)', [], (err, rows: any[]) => {
                 if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
                     this.db.run('ALTER TABLE evaluations ADD COLUMN criteria TEXT');
@@ -151,6 +173,112 @@ export class Database {
                 if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'instructorNotes')) {
                     this.db.run("ALTER TABLE stations ADD COLUMN instructorNotes TEXT NOT NULL DEFAULT '[]'");
                 }
+            });
+        });
+    }
+
+    private codeNumToString(num: number): string {
+        assert(num >= 0 && num < 256, "Number was out of range");
+        assert(Number.isInteger(num), "Number was not an integer");
+
+        // 32 characters; removed 1, I, O, and 0 for similarity.
+        const CHARS_MAP: string = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+        var bits = num.toString(2);
+        var result = "";
+
+        // Code should be 5 characters long.
+        for (var i = 0; i < 5; ++i) {
+            var index = 0;
+
+            // If a bit is active then we add some offset into CHARS_MAP.
+            index += bits.charCodeAt(i) === 49 ? 1 : 0;
+            index += bits.charCodeAt(i + 2) === 49 ? 2 : 0;
+            index += bits.charCodeAt((i + 4) % 8) === 49 ? 4 : 0;
+            index += bits.charCodeAt((i + 5) % 8) === 49 ? 8 : 0;
+            index += bits.charCodeAt((i + 7) % 8) === 49 ? 16 : 0;
+
+            // Append the chosen character.
+            result += CHARS_MAP[index];
+        }
+
+        return result;
+    }
+
+    private generateCodeStrings(count: number): string[] {
+        var codeNums = new Uint8Array(count);
+        crypto.getRandomValues(codeNums);
+
+        var strings: string[] = [];
+
+        codeNums.forEach((x, _index, _array) => {
+            strings.push((this as Database).codeNumToString(x));
+        });
+
+        return strings;
+    }
+
+    async generateRegistrationCodes(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            var codes = this.generateCodeStrings(4);
+
+            this.db.run(`
+                INSERT OR REPLACE INTO registration_codes (code, perm)
+                VALUES ('${codes[0]}', 'member'),
+                ('${codes[1]}', 'leadership'),
+                ('${codes[2]}', 'assistant'),
+                ('${codes[3]}', 'director')
+            `, (err) => {
+                if (err) {
+                    reject(`generateRegistrationCodes error: ${err.message}`);
+                    return;
+                }
+
+                resolve();
+            });
+        });
+    }
+
+    // NOTE: Do not expose this to the API!!!
+    async getAllRegistrationCodes(): Promise<RegistrationCode[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(`
+                SELECT code, perm FROM registration_codes
+            `, (err, row) => {
+                if (err) {
+                    reject(`generateRegistrationCodes error: ${err.message}`);
+                    return;
+                }
+
+                if (!row) {
+                    resolve([]);
+                    return;
+                }
+
+                resolve(row as RegistrationCode[]);
+            });
+        });
+    }
+
+    async getPermissionForRegistrationCode(code: string): Promise<RegistrationPermission | null> {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT perm FROM registration_codes WHERE code = ?
+            `;
+
+            this.db.get(sql, code, (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                
+                if (!row) {
+                    resolve(null);
+                    return;
+                }
+
+                // TODO: Maybe check this value in case it gets changed to something not within the spec.
+                resolve((row as RegistrationCode).perm);
             });
         });
     }

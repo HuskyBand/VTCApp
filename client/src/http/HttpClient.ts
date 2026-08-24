@@ -1,4 +1,4 @@
-import { DEFAULT_BASE_API_URL, DEFAULT_API_VERSION } from '@api/Constants.ts';
+import { DEFAULT_BASE_API_URL, DEFAULT_API_VERSION, DEFAULT_BASE_API_PORT } from '@api/Constants.ts';
 
 export interface HttpResponse<T = unknown> {
 	ok: boolean;
@@ -11,6 +11,8 @@ export interface HttpResponse<T = unknown> {
 	err?: Error;
 }
 
+const DEFAULT_BASE_API_HOSTNAME = `${DEFAULT_BASE_API_URL}:${DEFAULT_BASE_API_PORT}`;
+
 export class HttpClient {
     private _baseUrl: string;
     private _apiVersion: number;
@@ -18,7 +20,7 @@ export class HttpClient {
     private _onUnauthorized?: () => void;
 
     constructor() {
-        this._baseUrl = import.meta.env.VITE_API_HOSTNAME ?? DEFAULT_BASE_API_URL;
+        this._baseUrl = import.meta.env.VITE_API_HOSTNAME ?? DEFAULT_BASE_API_HOSTNAME;
         this._apiVersion = DEFAULT_API_VERSION;
     }
 

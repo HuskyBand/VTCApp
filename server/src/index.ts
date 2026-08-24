@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 
 import { DEFAULT_BASE_API_PORT, DEFAULT_BASE_API_URL } from '@api/Constants';
 import { cors } from 'hono/cors';
-import configureRoutes from './configureRoutes';
+import configureRoutes, { DB_PATH } from './configureRoutes';
 import { logger } from 'hono/logger';
 import { Database } from './database';
 import { env } from 'process';
@@ -11,7 +11,7 @@ import { env } from 'process';
 let hostname = env.HOSTNAME ?? DEFAULT_BASE_API_URL;
 let port = Number.parseInt(env.PORT ?? DEFAULT_BASE_API_PORT);
 
-const db = new Database();
+const db = new Database(DB_PATH);
 
 let routes = new Hono();
 

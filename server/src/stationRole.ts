@@ -12,6 +12,7 @@ export async function resolveStationRole(
     user: User & { id: number },
     stationId: number
 ): Promise<StationRole> {
+    // TODO: Should be masked with LevelMask if we add more flags.
     if (
         user.permFlags === PermFlags.IsDirector ||
         user.permFlags === PermFlags.IsLeadership ||

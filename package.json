@@ -14,6 +14,7 @@
         "build:server": "cd ./server && npm run build",
         "start:server": "cd ./server && npm run start",
 
-        "install:repo": "npm --prefix ./client install && npm --prefix ./packages/api install && npm --prefix ./server install"
+        "install:repo": "npm --prefix ./client install && npm --prefix ./packages/api install && npm --prefix ./server install",
+        "cli": "cd ./cli && npm run start"
     }
 }
