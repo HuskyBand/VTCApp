@@ -5,6 +5,7 @@ import { computeStationRoleFromScores, type StationRole } from '@api/station/Sta
 
 export type { StationRole };
 
+// TODO: Don't make this hardcoded.
 const LAST_STATION_ID = 6;
 
 export async function resolveStationRole(
@@ -12,6 +13,7 @@ export async function resolveStationRole(
     user: User & { id: number },
     stationId: number
 ): Promise<StationRole> {
+    // TODO: Should be masked with LevelMask if we add more flags.
     if (
         user.permFlags === PermFlags.IsDirector ||
         user.permFlags === PermFlags.IsLeadership ||

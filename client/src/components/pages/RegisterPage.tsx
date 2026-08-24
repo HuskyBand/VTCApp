@@ -10,6 +10,7 @@ export default function RegisterPage() {
 		email: '',
 		firstName: '',
 		lastName: '',
+        registerCode: '',
 		instrument: ''
 	});
 	const [error, setError] = React.useState('');
@@ -35,6 +36,7 @@ export default function RegisterPage() {
 			email: formData.email,
 			firstName: formData.firstName,
 			lastName: formData.lastName,
+            registerCode: formData.registerCode,
 			instrument: formData.instrument
 		});
 
@@ -110,6 +112,18 @@ export default function RegisterPage() {
                             name="instrument"
                             type="text"
                             value={formData.instrument}
+                            onChange={handleChange}
+                            required
+                            className="text-input"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="registerCode">Registration Code</label>
+                        <input
+                            id="registerCode"
+                            name="registerCode"
+                            type="text"
+                            value={formData.registerCode}
                             onChange={handleChange}
                             required
                             className="text-input"

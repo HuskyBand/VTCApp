@@ -1,0 +1,25 @@
+{
+  "name": "server",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "build": "npm install",
+    "start": "tsx ."
+  },
+  "dependencies": {
+    "sqlite3": "^6.0.1",
+    "typescript": "^5.9.3",
+    "tsx": "^4.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  }
+}

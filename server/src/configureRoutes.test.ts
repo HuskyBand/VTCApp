@@ -17,6 +17,7 @@ type RegisteredUser = {
     firstName: string;
     lastName: string;
     instrument: string;
+    registerCode: string;
     permFlags: number;
 };
 
@@ -29,6 +30,7 @@ let tempDir = '';
 let dbPath = '';
 let db: Database;
 let app: Hono;
+let registerCodes: { member: string, director: string };
 
 beforeEach(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'vtcapp-server-test-'));
@@ -43,6 +45,15 @@ beforeEach(async () => {
     app = new Hono();
     app.route('/', routes);
     app.route('/v1', routes);
+
+    await db.generateRegistrationCodes();
+    let codes = await db.getAllRegistrationCodes();
+
+    // TODO: Currently these are hardcoded, this should change at a later data.
+    registerCodes = {
+        member: codes[0].code,
+        director: codes[3].code
+    };
 });
 
 afterEach(async () => {
@@ -61,19 +72,25 @@ async function registerAndToken(username: string, isDirector = false): Promise<R
             email: `${username}@example.com`,
             firstName: 'Test',
             lastName: username,
+            registerCode: isDirector ? registerCodes.director : registerCodes.member,
             instrument: 'Trumpet',
         }),
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status, "Register response should be success (code 200)").toBe(200);
     const body = (await response.json()) as RegisterResponse;
 
+    // TODO: Should be masked with LevelMask if we add more flags.
     if (isDirector) {
-        await db.updateUser(body.user.id, { permFlags: PermFlags.IsDirector });
+        expect(body.user.permFlags, "Permission level should be IsDirector").toStrictEqual(PermFlags.IsDirector);
+    } else {
+        expect(body.user.permFlags, "Permission level should be IsBandMember").toStrictEqual(PermFlags.IsBandMember);
     }
 
     return body;
 }
+
+// TODO: Add assert messages to each test.
 
 describe('configureRoutes', () => {
     it('returns health status', async () => {

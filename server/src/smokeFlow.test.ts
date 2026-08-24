@@ -16,6 +16,7 @@ let tempDir = '';
 let dbPath = '';
 let db: Database;
 let app: Hono;
+let registerCodes: { member: string, director: string };
 
 beforeEach(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'vtcapp-smoke-test-'));
@@ -30,6 +31,15 @@ beforeEach(async () => {
     app = new Hono();
     app.route('/', routes);
     app.route('/v1', routes);
+
+    await db.generateRegistrationCodes();
+    let codes = await db.getAllRegistrationCodes();
+
+    // TODO: Currently these are hardcoded, this should change at a later data.
+    registerCodes = {
+        member: codes[0].code,
+        director: codes[3].code
+    };
 });
 
 afterEach(async () => {
@@ -48,6 +58,7 @@ async function register(username: string): Promise<RegisterBody> {
             email: `${username}@example.com`,
             firstName: 'Test',
             lastName: username,
+            registerCode: registerCodes.member,
             instrument: 'Trumpet',
         }),
     });

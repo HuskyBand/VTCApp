@@ -11,18 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: client
+        working-directory: ./client
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-
+          cache: 'npm'
+      
       - name: Install dependencies
         run: npm ci
 
@@ -40,17 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: server
+        working-directory: ./server
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -66,17 +64,16 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/api
+        working-directory: ./packages/api
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: packages/api/package-lock.json
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
