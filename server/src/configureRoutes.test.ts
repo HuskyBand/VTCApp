@@ -84,7 +84,7 @@ async function registerAndToken(username: string, isDirector = false): Promise<R
     if (isDirector) {
         expect(body.user.permFlags, "Permission level should be IsDirector").toStrictEqual(PermFlags.IsDirector);
     } else {
-        expect(body.user.permFlags, "Permission level should be IsBandMember").toStrictEqualaq(PermFlags.IsBandMember);
+        expect(body.user.permFlags, "Permission level should be IsBandMember").toStrictEqual(PermFlags.IsBandMember);
     }
 
     return body;
