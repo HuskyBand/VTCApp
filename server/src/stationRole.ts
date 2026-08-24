@@ -5,6 +5,7 @@ import { computeStationRoleFromScores, type StationRole } from '@api/station/Sta
 
 export type { StationRole };
 
+// TODO: Don't make this hardcoded.
 const LAST_STATION_ID = 6;
 
 export async function resolveStationRole(
