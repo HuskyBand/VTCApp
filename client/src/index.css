@@ -3,14 +3,16 @@
   --husky-gold-triple: 183, 165, 122;
   --spirit-purple-triple: 75, 46, 131;
   --spirit-gold-triple: 255, 199, 0;
+  --heritage-gold-triple: 133, 117, 77;
 
   --husky-purple: rgb(var(--husky-purple-triple));
   --husky-gold: rgb(var(--husky-gold-triple));
   --spirit-purple: rgb(var(--spirit-purple-triple));
   --spirit-gold: rgb(var(--spirit-gold-triple));
+  --heritage-gold: rgb(var(--heritage-gold-triple));
 
-  --soft-tone: rgba(var(--spirit-purple-triple), 40%);
-  --soft-tone-alt: rgba(var(--spirit-gold-triple), 80%);
+  --soft-tone: rgba(var(--husky-purple-triple), 40%);
+  --soft-tone-alt: rgba(var(--heritage-gold-triple), 40%);
   --tone-text: #ffffff;
   
   --text: #6b6375;
@@ -20,12 +22,14 @@
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
 
-  --accent: var(--spirit-purple);
+  --border-radius: 10px;
+
+  --accent: var(--husky-purple);
   --accent-bg: var(--soft-tone);
   --accent-border: var(--soft-tone);
   --accent-text: var(--accent);
 
-  --alt-accent: var(--spirit-gold);
+  --alt-accent: var(--heritage-gold);
   --alt-accent-bg: var(--soft-tone-alt);
   --alt-accent-border: var(--soft-tone-alt);
   --alt-accent-text: var(--alt-accent);
@@ -63,12 +67,9 @@
 }
 
 #root {
-  width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: left;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -110,7 +111,7 @@ p {
 code {
   font-family: var(--mono);
   display: inline-flex;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   color: var(--text-h);
   font-size: 15px;
   line-height: 135%;
@@ -118,14 +119,18 @@ code {
   background: var(--code-bg);
 }
 
-button {
-  font-size: 16px;
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 15px;
-  border-radius: 10px;
+  min-width: 200px;
+  border-radius: var(--border-radius);
   color: var(--light-button-text);
   background: var(--light-button-bg);
   border: 2px solid transparent;
   transition: border-color 0.3s, background 0.3s;
+  text-decoration: none;
   margin-bottom: 24px;
 
   &:hover {
@@ -135,6 +140,40 @@ button {
   &:focus-visible {
     outline: 2px solid var(--light-button-bg-selected);
     outline-offset: 2px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &.primary {
+    background: var(--soft-tone);
+    color: var(--light-button-text);
+
+    &:hover {
+      background: var(--accent);
+      color: var(--dark-button-text);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-border);
+      outline-offset: 2px;
+    }
+  }
+  
+  &.secondary {
+    background: var(--soft-tone-alt);
+    color: var(--light-button-text);
+
+    &:hover {
+      background: var(--alt-accent);
+      color: var(--dark-button-text);
+    }
+    
+    &:focus-visible {
+      outline: 2px solid var(--alt-accent-border);
+      outline-offset: 2px;
+    }
   }
 
   &.dark {
@@ -183,10 +222,12 @@ button {
 }
 
 .text-input {
-  width: 100%;
+  width: -webkit-fill-available;
   padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  border: 1px solid var(--light-button-bg);
+  border-radius: var(--border-radius);
+  background: var(--light-button-bg);
+  color: var(--light-button-text);
   font-size: 16px;
   margin: 10px 0;
 }
@@ -224,10 +265,6 @@ button {
 
 .evaluation-form {
   margin: 20px 0;
-}
-
-.form-group {
-  margin-bottom: 20px;
 }
 
 .form-group label {
@@ -272,7 +309,7 @@ button {
 .status-option {
   padding: 8px 12px;
   border: none;
-  border-radius: 15px;
+  border-radius: var(--border-radius);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -324,7 +361,7 @@ button {
 .status-select {
   padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   font-size: 14px;
   background: white;
   color: var(--text);
@@ -385,7 +422,7 @@ button {
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: var(--border-radius);
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 20px;
@@ -471,7 +508,7 @@ button {
   background: var(--accent-bg);
   color: var(--accent-text);
   padding: 5px 10px;
-  border-radius: 15px;
+  border-radius: var(--border-radius);
   display: inline-block;
   font-size: 14px;
   font-weight: 500;
@@ -488,7 +525,7 @@ button {
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: var(--border-radius);
   font-weight: 500;
   cursor: pointer;
 }
@@ -521,7 +558,7 @@ button {
 
 .status-badge {
   padding: 5px 10px;
-  border-radius: 15px;
+  border-radius: var(--border-radius);
   font-size: 14px;
   font-weight: 500;
   color: white;
@@ -556,7 +593,7 @@ button {
   width: 100%;
   max-width: 400px;
   padding: 20px;
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
   box-shadow: var(--shadow);
 }
 
@@ -590,7 +627,7 @@ button {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--border-radius);
   font-size: 16px;
   margin: 20px 0;
 }
@@ -608,7 +645,7 @@ button {
 .badge {
   padding: 8px 12px;
   border: none;
-  border-radius: 15px;
+  border-radius: var(--border-radius);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -658,7 +695,7 @@ button {
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--border-radius);
   font-size: 16px;
   margin: 5px 0;
 }

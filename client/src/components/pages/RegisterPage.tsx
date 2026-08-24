@@ -28,6 +28,13 @@ export default function RegisterPage() {
 		});
 	};
 
+	const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		setFormData({
+			...formData,
+			[e.target.name]: e.target.value
+		});
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const result = await UserManager.register({
@@ -107,15 +114,31 @@ export default function RegisterPage() {
                     </div>
                     <div className="form-group">
                         <label htmlFor="instrument">Instrument</label>
-                        <input
-                            id="instrument"
+                        <select id="instrument"
                             name="instrument"
-                            type="text"
                             value={formData.instrument}
-                            onChange={handleChange}
+                            onChange={handleSelectChange}
                             required
-                            className="text-input"
-                        />
+                            className="text-input"> 
+                            <option value="nil">-- Select an instrument --</option>
+                            <optgroup label="Winds">
+                                <option value="piccolo">Piccolo</option>
+                                <option value="clarinet">Clarinet</option>
+                                <option value="alto-sax">Alto Saxophone</option>
+                                <option value="tenor-sax">Tenor Saxophone</option>
+                                <option value="trumpet">Trumpet</option>
+                                <option value="mellophone">Mellophone</option>
+                                <option value="trombone">Trombone</option>
+                                <option value="baritone">Baritone</option>
+                                <option value="sousaphone">Sousaphone</option>
+                            </optgroup>
+                            <optgroup label="Drumline">
+                                <option value="snare-drum">Snare Drum</option>
+                                <option value="tenor-drums">Tenor Drums</option>
+                                <option value="bass-drum">Bass Drum</option>
+                                <option value="cymbals">Cymbals</option>
+                            </optgroup>
+                        </select>
                     </div>
                     <div className="form-group">
                         <label htmlFor="registerCode">Registration Code</label>
