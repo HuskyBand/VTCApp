@@ -187,10 +187,6 @@ export default function HomePage() {
                     {UserManager.isDirector && (
                         <button className="new-station-btn" onClick={() => nav('/admin/stations')}>+ Manage Stations</button>
                     )}
-                    <p>Press the button to Logout!</p>
-                    <button onClick={() => {
-                        nav('/logout');
-                    }}>Logout</button>
                 </div>
             </section>
             <BottomNav />

@@ -101,6 +101,7 @@ export default function ProfileSettingsPage() {
                     {message && <p className="success-message">{message}</p>}
                     {error && <p className="error-message">{error}</p>}
                     <button type="submit" className="button primary auth-submit">Update Profile</button>
+                    <a className="button secondary auth-logout">Logout</a>
                 </form>
                 <div className="profile-info">
                     <div className="info-item">

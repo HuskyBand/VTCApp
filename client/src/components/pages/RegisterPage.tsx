@@ -11,7 +11,7 @@ export default function RegisterPage() {
 		firstName: '',
 		lastName: '',
         registerCode: '',
-		instrument: ''
+        instrument: ''
 	});
 	const [error, setError] = React.useState('');
 
@@ -59,12 +59,15 @@ export default function RegisterPage() {
         <main className="center-section">
             <section className="auth-form-container">
                 <div className="auth-header">
-                    <h1>Create your account</h1>
+                    <h1>Create an account</h1>
                     <p>Join the Visual Training Circuit</p>
                 </div>
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label htmlFor="username">Username</label>
+                        <p className="field-hint">
+                            Your username is permanent, visible to staff, and can't be changed later — choose carefully.
+                        </p>
                         <input
                             id="username"
                             name="username"
@@ -74,7 +77,6 @@ export default function RegisterPage() {
                             required
                             className="text-input"
                         />
-                        <p className="field-hint">Your username is permanent and can't be changed later — choose carefully.</p>
                     </div>
                     <div className="form-group">
                         <label htmlFor="email">Email</label>
@@ -133,10 +135,10 @@ export default function RegisterPage() {
                                 <option value="sousaphone">Sousaphone</option>
                             </optgroup>
                             <optgroup label="Drumline">
-                                <option value="snare-drum">Snare Drum</option>
-                                <option value="tenor-drums">Tenor Drums</option>
-                                <option value="bass-drum">Bass Drum</option>
-                                <option value="cymbals">Cymbals</option>
+                            <option value="snare-drum">Snare Drum</option>
+                            <option value="tenor-drums">Tenor Drums</option>
+                            <option value="bass-drum">Bass Drum</option>
+                            <option value="cymbals">Cymbals</option>
                             </optgroup>
                         </select>
                     </div>

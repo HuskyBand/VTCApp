@@ -43,6 +43,8 @@
   --light-button-bg-selected: #aaa;
   --light-button-border: #777;
   --light-button-text: #000;
+
+  --body-text-size: 18px;
   
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -51,7 +53,7 @@
   --heading: 'Inter', system-ui, Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font: var(--body-text-size)/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
@@ -62,12 +64,14 @@
   -moz-osx-font-smoothing: grayscale;
 
   @media (max-width: 1024px) {
-    font-size: 16px;
+    --body-text-size: 16px;
+    font-size: var(--body-text-size);
   }
 }
 
 #root {
   max-width: 100%;
+  height: calc(100svh);
   margin: 0 auto;
   text-align: left;
   display: flex;
@@ -77,6 +81,10 @@
 
 body {
   margin: 0;
+}
+
+button {
+  font-size: var(--body-text-size)
 }
 
 h1,
@@ -123,8 +131,11 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: normal;
+  font-family: var(--sans);
   padding: 10px 15px;
   min-width: 200px;
+  min-height: 2em;
   border-radius: var(--border-radius);
   color: var(--light-button-text);
   background: var(--light-button-bg);
@@ -199,6 +210,11 @@ code {
 }
 
 #center {
+  margin: 0 auto;
+  padding: 60px 60px;
+  align-content: center;
+  text-align: center;
+  max-width: 800px;
   padding-bottom: 110px;
 }
 
@@ -211,6 +227,8 @@ code {
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
+  flex-direction: row;
+  flex-wrap: wrap;
   padding: 10px 0;
   box-shadow: var(--shadow);
 }
@@ -228,7 +246,7 @@ code {
   border-radius: var(--border-radius);
   background: var(--light-button-bg);
   color: var(--light-button-text);
-  font-size: 16px;
+  font-size: var(--body-text-size);
   margin: 10px 0;
 }
 
