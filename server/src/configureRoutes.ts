@@ -6,12 +6,13 @@ import type { User } from '@api/user/User';
 import { PermFlags } from '@api/user/User';
 import type { LoginPayload, RegisterPayload, LoginResponse } from '@api/auth/Login';
 import { resolveStationRole } from './stationRole';
+import { join } from 'path';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // NOTE: Default path should be in the root directory so it can be accessed by the CLI in testing.
-const DEFAULT_DB_PATH = "../vtc.db";
-export const DB_PATH = process.env.DB_PATH ?? DEFAULT_DB_PATH;
+const DEFAULT_DB_PATH = "../";
+export const DB_PATH = join(process.env.DB_PATH ?? DEFAULT_DB_PATH, 'vtc.db');
 
 // SSE broadcast: maps userId -> send function (null userId = broadcast to all)
 const sseClients = new Map<number, Set<(data: string) => void>>();
