@@ -442,17 +442,17 @@ code {
   width: 100%;
   max-width: 400px;
 
-  &.not_started {
-    background-color: var(--border);
-  }
-
   &::-webkit-progress-bar {
     border-radius: 5px;
     border-width: 0;
 
     background-color: var(--soft-tone);
+  }
 
-    &.not_started {
+  &.not_started {
+    background-color: var(--border);
+
+    &::-webkit-progress-bar {
       background-color: var(--border);
     }
   }
@@ -461,25 +461,27 @@ code {
     border-radius: 5px;
     border-width: 0;
 
-    background-color: var(--accent);
+    background-color: var(--proficient-color);
+  }
+  
+  &::-moz-progress-bar {
+    background-color: var(--proficient-color);
+  }
 
-    &.proficient {
+  &.proficient {
+    &::-webkit-progress-value {
       background-color: var(--proficient-color);
     }
-
-    &.mastery {
-      background-color: var(--mastery-color);
+    &::-moz-progress-bar {
+      background-color: var(--proficient-color);
     }
   }
 
-  &::-moz-progress-bar {
-    background-color: var(--accent);
-
-    &.proficient {
-      background-color: var(--proficient-color);
+  &.mastery {
+    &::-webkit-progress-value {
+      background-color: var(--mastery-color);
     }
-
-    &.mastery {
+    &::-moz-progress-bar {
       background-color: var(--mastery-color);
     }
   }
