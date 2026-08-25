@@ -506,10 +506,12 @@ code {
   font-weight: bold;
 }
 
-.station-name svg {
-  vertical-align: center;
+.station-name {
   text-align: left;
-  padding-left: 0.3em;
+  svg {
+    vertical-align: center;
+    padding-left: 0.3em;
+  }
 }
 
 .station-status {
