@@ -4,7 +4,7 @@ import BottomNav from "../BottomNav";
 type CriteriaItem = {
     id: number;
     label: string;
-    status: 'developing' | 'satisfactory' | 'mastery';
+    status: 'developing' | 'proficient' | 'mastery';
 };
 
 type Criterion = {
@@ -22,7 +22,7 @@ export default function EditVTC() {
             items: [
                 { id: 1, label: 'Not yet', status: 'developing' },
                 { id: 2, label: 'In progress', status: 'developing' },
-                { id: 3, label: 'Satisfactory', status: 'satisfactory' },
+                { id: 3, label: 'Satisfactory', status: 'proficient' },
                 { id: 4, label: 'Exceeding Standard', status: 'mastery' }
             ]
         },
@@ -32,7 +32,7 @@ export default function EditVTC() {
             items: [
                 { id: 5, label: 'Not yet', status: 'developing' },
                 { id: 6, label: 'In progress', status: 'developing' },
-                { id: 7, label: 'Satisfactory', status: 'satisfactory' },
+                { id: 7, label: 'Satisfactory', status: 'proficient' },
                 { id: 8, label: 'Exceeding Standard', status: 'mastery' }
             ]
         },
@@ -57,7 +57,7 @@ export default function EditVTC() {
         setCriteria(newCriteria);
     };
 
-    const handleEditItemStatus = (critIdx: number, itemIdx: number, status: 'developing' | 'satisfactory' | 'mastery') => {
+    const handleEditItemStatus = (critIdx: number, itemIdx: number, status: 'developing' | 'proficient' | 'mastery') => {
         const newCriteria = [...criteria];
         newCriteria[critIdx].items[itemIdx].status = status;
         setCriteria(newCriteria);
@@ -104,11 +104,11 @@ export default function EditVTC() {
                                                 />
                                                 <select
                                                     value={item.status}
-                                                    onChange={(e) => handleEditItemStatus(critIdx, itemIdx, e.target.value as 'developing' | 'satisfactory' | 'mastery')}
+                                                    onChange={(e) => handleEditItemStatus(critIdx, itemIdx, e.target.value as 'developing' | 'proficient' | 'mastery')}
                                                     className="status-select"
                                                 >
                                                     <option value="developing">Developing</option>
-                                                    <option value="satisfactory">Satisfactory</option>
+                                                    <option value="proficient">Satisfactory</option>
                                                     <option value="mastery">Mastery</option>
                                                 </select>
                                             </div>

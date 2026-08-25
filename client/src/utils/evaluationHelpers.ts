@@ -5,7 +5,7 @@ export type EvaluationRecord = {
     createdAt?: string;
 };
 
-export type EvaluationStatus = 'not_started' | 'developing' | 'satisfactory' | 'mastery';
+export type EvaluationStatus = 'not_started' | 'novice' | 'developing' | 'proficient' | 'mastery';
 
 export const scoreToStatus = (score?: number | null): EvaluationStatus => {
     if (score === undefined || score === null) {
@@ -15,9 +15,12 @@ export const scoreToStatus = (score?: number | null): EvaluationStatus => {
         return 'mastery';
     }
     if (score >= 50) {
-        return 'satisfactory';
+        return 'proficient';
     }
-    return 'developing';
+    if (score >= 20) {
+        return 'developing';
+    }
+    return 'novice';
 };
 
 export const getLatestStationEvaluation = (
@@ -38,7 +41,7 @@ export const getLatestStationEvaluation = (
 export const hasPassedStation = (evaluations: EvaluationRecord[], stationId: number): boolean => {
     const latest = getLatestStationEvaluation(evaluations, stationId);
     const status = scoreToStatus(latest?.score);
-    return status === 'satisfactory' || status === 'mastery';
+    return status === 'proficient' || status === 'mastery';
 };
 
 export const isMasteryLocked = (evaluations: EvaluationRecord[], stationId: number): boolean => {
@@ -48,8 +51,9 @@ export const isMasteryLocked = (evaluations: EvaluationRecord[], stationId: numb
 
 const statusLabels: Record<EvaluationStatus, string> = {
     not_started: 'Not Started',
+    novice: 'Novice',
     developing: 'Developing',
-    satisfactory: 'Satisfactory',
+    proficient: 'Satisfactory',
     mastery: 'Mastery',
 };
 

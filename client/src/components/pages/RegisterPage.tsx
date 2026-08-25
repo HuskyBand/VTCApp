@@ -124,21 +124,21 @@ export default function RegisterPage() {
                             className="text-input"> 
                             <option value="nil">-- Select an instrument --</option>
                             <optgroup label="Winds">
-                                <option value="piccolo">Piccolo</option>
-                                <option value="clarinet">Clarinet</option>
-                                <option value="alto-sax">Alto Saxophone</option>
-                                <option value="tenor-sax">Tenor Saxophone</option>
-                                <option value="trumpet">Trumpet</option>
-                                <option value="mellophone">Mellophone</option>
-                                <option value="trombone">Trombone</option>
-                                <option value="baritone">Baritone</option>
-                                <option value="sousaphone">Sousaphone</option>
+                                <option value="Piccolo">Piccolo</option>
+                                <option value="Clarinet">Clarinet</option>
+                                <option value="Alto Sax">Alto Saxophone</option>
+                                <option value="Tenor Sax">Tenor Saxophone</option>
+                                <option value="Trumpet">Trumpet</option>
+                                <option value="Mellophone">Mellophone</option>
+                                <option value="Trombone">Trombone</option>
+                                <option value="Baritone">Baritone</option>
+                                <option value="Sousaphone">Sousaphone</option>
                             </optgroup>
                             <optgroup label="Drumline">
-                            <option value="snare-drum">Snare Drum</option>
-                            <option value="tenor-drums">Tenor Drums</option>
-                            <option value="bass-drum">Bass Drum</option>
-                            <option value="cymbals">Cymbals</option>
+                            <option value="Snare Drum">Snare Drum</option>
+                            <option value="Tenor Drums">Tenor Drums</option>
+                            <option value="Bass Drum">Bass Drum</option>
+                            <option value="Cymbals">Cymbals</option>
                             </optgroup>
                         </select>
                     </div>

@@ -228,7 +228,7 @@ export default function DirectorOverview() {
                                 {(overview?.stations ?? []).map(s => {
                                     const latest = getLatestStationEvaluation(selectedEvals, s.stationId);
                                     const status = scoreToStatus(latest?.score);
-                                    const labels: Record<string, string> = { mastery: 'Mastery', satisfactory: 'Proficient', developing: 'Developing', not_started: 'Not Started' };
+                                    const labels: Record<string, string> = { mastery: 'Mastery', proficient: 'Proficient', developing: 'Developing', not_started: 'Not Started' };
                                     return (
                                         <div key={s.stationId} className="member-station-chip" style={{ borderColor: STATUS_COLORS[status] ?? STATUS_COLORS.not_started }}>
                                             <span className="chip-label">{s.name}</span>

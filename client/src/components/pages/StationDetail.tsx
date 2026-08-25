@@ -161,7 +161,7 @@ export default function StationDetail() {
     const getStatusIndicator = (status: EvaluationStatus) => {
         switch (status) {
             case 'mastery': return '🟢';
-            case 'satisfactory': return '🟡';
+            case 'proficient': return '🟡';
             case 'developing': return '🟠';
             case 'not_started': return '🔴';
             default: return '🔴';

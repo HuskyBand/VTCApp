@@ -12,7 +12,7 @@ import {
     type EvaluationRecord,
 } from "@client/utils/evaluationHelpers";
 
-type CriterionLevel = 'developing' | 'proficient' | 'mastery';
+type CriterionLevel = 'novice' | 'developing' | 'proficient' | 'mastery';
 
 type Criterion = {
     name: string;
@@ -20,8 +20,9 @@ type Criterion = {
 };
 
 const levelScore: Record<CriterionLevel, number> = {
-    developing: 33,
-    proficient: 67,
+    novice: 25,
+    developing: 50,
+    proficient: 75,
     mastery: 100,
 };
 
@@ -113,8 +114,8 @@ export default function EvaluationForm() {
     };
 
     const getOverallStatus = (): CriterionLevel => {
-        if (criteria.length === 0) return 'developing';
-        const order: CriterionLevel[] = ['developing', 'proficient', 'mastery'];
+        if (criteria.length === 0) return 'novice';
+        const order: CriterionLevel[] = ['novice', 'developing', 'proficient', 'mastery'];
         return criteria.reduce<CriterionLevel>((lowest, c) => {
             return order.indexOf(c.level) < order.indexOf(lowest) ? c.level : lowest;
         }, 'mastery');

@@ -248,40 +248,6 @@
     margin: 16px 0;
 }
 
-.station-status {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 20px 0;
-    padding: 16px;
-    background: rgba(var(--spirit-purple-triple), 0.05);
-    border-radius: var(--border-radius);
-    border: 1px solid rgba(var(--spirit-purple-triple), 0.1);
-}
-
-.status-indicator {
-    font-size: 32px;
-}
-
-.status-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.status-label {
-    font-size: 12px;
-    color: var(--text-sh);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
-}
-
-.status-value {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-h);
-}
-
 .evaluation-history {
     margin: 24px 0;
     padding: 20px;

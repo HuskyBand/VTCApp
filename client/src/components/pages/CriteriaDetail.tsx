@@ -9,7 +9,7 @@ export default function CriteriaDetail() {
     const criteria = {
         name: 'Criteria 1',
         developing: 'Developing explanation',
-        satisfactory: 'Satisfactory explanation',
+        proficient: 'Satisfactory explanation',
         mastery: 'Mastery explanation'
     };
 
@@ -24,7 +24,7 @@ export default function CriteriaDetail() {
                     </div>
                     <div className="status-block">
                         <h3>Satisfactory</h3>
-                        <p>{criteria.satisfactory}</p>
+                        <p>{criteria.proficient}</p>
                     </div>
                     <div className="status-block">
                         <h3>Mastery</h3>
