@@ -16,17 +16,6 @@ type Station = {
     criteria: string[];
 };
 
-const getStatusColor = (status: EvaluationStatus) => {
-    switch (status) {
-        case 'mastery': return 'var(--mastery-color)';
-        case 'proficient': return 'var(--proficient-color)';
-        case 'developing': return 'var(--notstarted-color)';
-        case 'novice': return 'var(--notstarted-color)';
-        case 'not_started': return 'var(--notstarted-color)';
-        default: return 'var(--notstarted-color)';
-    }
-};
-
 const getStatusLabel = (status: EvaluationStatus) => {
     switch (status) {
         case 'mastery': return 'Mastered';
