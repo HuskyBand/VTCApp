@@ -575,9 +575,14 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const queue = await db.getQueueForStation(stationId);
         if (queue.length > 0 && queue[0].userId === currentUserId) {
             try {
+                const station = await db.getStationById(stationId);
+                if (!station) {
+                    return c.json({ error: 'Could not find station.' }, 404);
+                }
+                
                 await db.createNotification({
-                    title: `You're first in line for Station ${stationId}`,
-                    message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
+                    title: `You're first in line for Station ${station.name}`,
+                    message: `You are now first in the queue for Station ${station.name}. Please be ready for evaluation.`,
                     senderId: currentUserId,
                     senderName: `${currentUser.firstName} ${currentUser.lastName}`,
                     recipientId: currentUserId,
