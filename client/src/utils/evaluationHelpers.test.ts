@@ -14,8 +14,8 @@ describe('scoreToStatus', () => {
 
     it('maps thresholds correctly', () => {
         expect(scoreToStatus(49)).toBe('developing');
-        expect(scoreToStatus(50)).toBe('satisfactory');
-        expect(scoreToStatus(79)).toBe('satisfactory');
+        expect(scoreToStatus(50)).toBe('proficient');
+        expect(scoreToStatus(79)).toBe('proficient');
         expect(scoreToStatus(80)).toBe('mastery');
     });
 });
@@ -37,7 +37,7 @@ describe('getStatusLabel', () => {
     it('returns friendly labels', () => {
         expect(getStatusLabel('not_started')).toBe('Not Started');
         expect(getStatusLabel('developing')).toBe('Developing');
-        expect(getStatusLabel('satisfactory')).toBe('Satisfactory');
+        expect(getStatusLabel('proficient')).toBe('Satisfactory');
         expect(getStatusLabel('mastery')).toBe('Mastery');
     });
 });

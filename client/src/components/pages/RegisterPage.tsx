@@ -11,7 +11,7 @@ export default function RegisterPage() {
 		firstName: '',
 		lastName: '',
         registerCode: '',
-		instrument: ''
+        instrument: ''
 	});
 	const [error, setError] = React.useState('');
 
@@ -22,6 +22,13 @@ export default function RegisterPage() {
 	}, [nav]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setFormData({
+			...formData,
+			[e.target.name]: e.target.value
+		});
+	};
+
+	const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setFormData({
 			...formData,
 			[e.target.name]: e.target.value
@@ -52,12 +59,15 @@ export default function RegisterPage() {
         <main className="center-section">
             <section className="auth-form-container">
                 <div className="auth-header">
-                    <h1>Create your account</h1>
+                    <h1>Create an account</h1>
                     <p>Join the Visual Training Circuit</p>
                 </div>
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label htmlFor="username">Username</label>
+                        <p className="field-hint">
+                            Your username is permanent, visible to staff, and can't be changed later — choose carefully.
+                        </p>
                         <input
                             id="username"
                             name="username"
@@ -67,7 +77,6 @@ export default function RegisterPage() {
                             required
                             className="text-input"
                         />
-                        <p className="field-hint">Your username is permanent and can't be changed later — choose carefully.</p>
                     </div>
                     <div className="form-group">
                         <label htmlFor="email">Email</label>
@@ -107,15 +116,31 @@ export default function RegisterPage() {
                     </div>
                     <div className="form-group">
                         <label htmlFor="instrument">Instrument</label>
-                        <input
-                            id="instrument"
+                        <select id="instrument"
                             name="instrument"
-                            type="text"
                             value={formData.instrument}
-                            onChange={handleChange}
+                            onChange={handleSelectChange}
                             required
-                            className="text-input"
-                        />
+                            className="text-input"> 
+                            <option value="nil">-- Select an instrument --</option>
+                            <optgroup label="Winds">
+                                <option value="Piccolo">Piccolo</option>
+                                <option value="Clarinet">Clarinet</option>
+                                <option value="Alto Sax">Alto Saxophone</option>
+                                <option value="Tenor Sax">Tenor Saxophone</option>
+                                <option value="Trumpet">Trumpet</option>
+                                <option value="Mellophone">Mellophone</option>
+                                <option value="Trombone">Trombone</option>
+                                <option value="Baritone">Baritone</option>
+                                <option value="Sousaphone">Sousaphone</option>
+                            </optgroup>
+                            <optgroup label="Drumline">
+                            <option value="Snare Drum">Snare Drum</option>
+                            <option value="Tenor Drums">Tenor Drums</option>
+                            <option value="Bass Drum">Bass Drum</option>
+                            <option value="Cymbals">Cymbals</option>
+                            </optgroup>
+                        </select>
                     </div>
                     <div className="form-group">
                         <label htmlFor="registerCode">Registration Code</label>
