@@ -103,9 +103,10 @@ h1 {
   font-size: 90px;
   font-weight: 700;
   color: var(--text-h);
+  line-height: 100%;
   margin: 32px 0;
   @media (max-width: 700px) {
-    font-size: 80px;
+    font-size: 70px;
     margin: 25px 0;
   }
 }
@@ -113,10 +114,10 @@ h2 {
   font-size: 35px;
   font-weight: 500;
   color: var(--text-sh);
-  line-height: 118%;
+  line-height: 100%;
   margin: 0 0 8px;
   @media (max-width: 700px) {
-    font-size: 30px;
+    font-size: 25px;
   }
 }
 p {
@@ -413,6 +414,10 @@ code {
   min-width: 120px;
 }
 
+.station-title {
+  margin-bottom: 0;
+}
+
 .stations-list {
   overflow-y: auto;
   box-sizing: border-box;
@@ -503,6 +508,7 @@ code {
 
 .station-name svg {
   vertical-align: center;
+  text-align: left;
   padding-left: 0.3em;
 }
 

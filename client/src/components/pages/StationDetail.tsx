@@ -192,7 +192,7 @@ export default function StationDetail() {
         <>
             <section id="center">
                 <div>
-                    <h1>{station.name}</h1>
+                    <h1 className="station-title">{station.name}</h1>
                     <div
                         key={station.id}
                         className={`station-row ${getLatestStatus()}`}
