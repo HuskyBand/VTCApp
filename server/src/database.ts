@@ -32,6 +32,11 @@ export type QueueEntry = {
     status?: string;
 };
 
+export type EvaluationCriteron = {
+    name: string,
+    status: string
+};
+
 export type Evaluation = {
     id?: number;
     userId: number;
@@ -39,7 +44,7 @@ export type Evaluation = {
     stationId: number;
     score?: number;
     comments?: string;
-    criteria?: string[];
+    criteria?: EvaluationCriteron[];
     createdAt?: string;
 };
 
@@ -404,7 +409,7 @@ export class Database {
         stationId: number;
         score?: number;
         comments?: string;
-        criteria?: string[];
+        criteria?: EvaluationCriteron[];
     }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
             const sql = `

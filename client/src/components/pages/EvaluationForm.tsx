@@ -167,7 +167,12 @@ export default function EvaluationForm() {
                 currentStationId,
                 score,
                 comments,
-                criteria.map((c) => c.level),
+                criteria.map((c) => {
+                    return {
+                        name: c.name,
+                        status: c.level
+                    };
+                }),
                 Array.from(feedbackChecked),
                 overallStatus
             );
@@ -231,7 +236,7 @@ export default function EvaluationForm() {
                                     <div key={idx} className="criteria-form-row">
                                         <div className="criteria-name">{criterion.name}</div>
                                         <div className="criteria-radio-group">
-                                            {(['developing', 'proficient', 'mastery'] as CriterionLevel[]).map((level) => (
+                                            {(['novice', 'developing', 'proficient', 'mastery'] as CriterionLevel[]).map((level) => (
                                                 <label key={level} className={`radio-label radio-${level} ${criterion.level === level ? 'radio-active' : ''}`}>
                                                     <input
                                                         type="radio"

@@ -157,6 +157,7 @@
     color: #dc3545;
     font-size: 14px;
     margin: 0;
+    margin-top: 10px;
     text-align: center;
     background: rgba(220, 53, 69, 0.1);
     padding: 12px;
@@ -168,6 +169,7 @@
     color: #28a745;
     font-size: 14px;
     margin: 0;
+    margin-top: 10px;
     text-align: center;
     background: rgba(40, 167, 69, 0.1);
     padding: 12px;
@@ -249,11 +251,9 @@
 }
 
 .evaluation-history {
-    margin: 24px 0;
-    padding: 20px;
+    margin: 24px auto;
+    max-width: 800px;
     background: white;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border);
 }
 
 .evaluation-history h3 {
@@ -285,22 +285,20 @@
     font-size: 16px;
 }
 
-.evaluation-date {
-    color: var(--text-sh);
-    font-size: 14px;
-}
-
 .evaluation-comments {
     color: var(--text);
     font-style: italic;
     padding: 8px 12px;
-    background: rgba(var(--spirit-purple-triple), 0.03);
-    border-radius: var(--border-radius);
-    border-left: 3px solid var(--accent);
+
+    h4 {
+        margin-bottom: 0;
+        font-style: normal;
+    }
 }
 
 .evaluated-view {
-    margin: 24px 0;
+    max-width: 800px;
+    margin: 24px auto;
 }
 
 .latest-evaluation h3 {
@@ -309,23 +307,16 @@
 }
 
 .evaluation-item.latest {
-    background: rgba(var(--accent), 0.05);
-    border: 2px solid var(--accent);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
 }
 
 .history-btn, .back-btn {
-    margin-top: 16px;
-    padding: 8px 16px;
-    background: var(--button-secondary-bg);
-    color: var(--button-secondary-text);
-    border: 1px solid var(--border);
-    border-radius: var(--border-radius);
+    padding: 6px 12px;
+    color: var(--text);
+    background: white;
+    border-width: 0;
     cursor: pointer;
-    font-size: 14px;
-}
-
-.history-btn:hover, .back-btn:hover {
-    background: var(--button-secondary-hover-bg);
 }
 
 .no-evaluations {
@@ -381,11 +372,6 @@ select.text-input {
     transition: all 0.2s ease;
 }
 
-.back-button:hover {
-    background: rgba(var(--spirit-purple-triple), 0.05);
-    border-color: var(--accent);
-}
-
 .evaluation-header-section {
     display: flex;
     justify-content: space-between;
@@ -395,19 +381,15 @@ select.text-input {
 
 .evaluation-header-section h3 {
     margin: 0;
+    text-align: left;
 }
 
 .refresh-btn {
     padding: 6px 12px;
-    font-size: 13px;
-    background: rgba(var(--spirit-purple-triple), 0.1);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-}
-
-.refresh-btn:hover {
-    background: var(--accent);
-    color: white;
+    color: var(--text);
+    background: white;
+    border-width: 0;
+    cursor: pointer;
 }
 
 .history-header {
@@ -418,12 +400,14 @@ select.text-input {
 }
 
 .history-header h3 {
+    text-align: left;
     margin: 0;
 }
 
 .history-btn {
-    margin-top: 16px;
-    width: 100%;
-    padding: 10px;
-    text-align: center;
+    padding: 6px 12px;
+    color: var(--text);
+    background: white;
+    border-width: 0;
+    cursor: pointer;
 }

@@ -19,12 +19,17 @@ type StationRecord = {
     instructorNotes?: string[];
 };
 
+type EvaluationCriterion = {
+    name: string,
+    status: string
+};
+
 type UserEvaluation = {
     id?: number;
     stationId: number;
     score?: number;
     comments?: string;
-    criteria?: string[];
+    criteria?: EvaluationCriterion[];
     createdAt?: string;
 };
 
@@ -273,7 +278,7 @@ class UserManager {
         stationId: number,
         score?: number,
         comments?: string,
-        criteria?: string[],
+        criteria?: EvaluationCriterion[],
         feedbackItems?: string[],
         overallStatus?: string
     ): Promise<boolean> {

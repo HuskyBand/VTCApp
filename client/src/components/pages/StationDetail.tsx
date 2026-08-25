@@ -2,17 +2,44 @@ import { useParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
-import { isMasteryLocked, scoreToStatus, getStatusLabel, type EvaluationStatus } from "@client/utils/evaluationHelpers";
+import { isMasteryLocked, scoreToStatus, type EvaluationStatus } from "@client/utils/evaluationHelpers";
 import type { StationRole } from "@api/station/StationRole";
+
+type StationCriterionState = {
+    name: string,
+    status: string
+};
 
 type StationEvaluation = {
     id?: number;
     stationId: number;
     score?: number;
     comments?: string;
-    criteria?: string[];
+    criteria?: StationCriterionState[];
     createdAt?: string;
 };
+
+const getStatusLabel = (status: string) => {
+    switch (status) {
+        case 'mastery': return 'Mastered';
+        case 'proficient': return 'Proficient';
+        case 'developing': return 'Developing';
+        case 'novice': return 'Novice';
+        case 'not_started': return 'Not Started';
+        default: return 'Not Started';
+    }
+};
+
+const getStatusValue = (status: string) => {
+    switch (status) {
+        case 'mastery': return 1;
+        case 'proficient': return 1;
+        case 'developing': return 2/3;
+        case 'novice': return 1/3;
+        case 'not_started': return 0;
+        default: return 0;
+    }
+}
 
 export default function StationDetail() {
     const { id } = useParams();
@@ -151,21 +178,14 @@ export default function StationDetail() {
         }
     };
 
-    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const getLatestScore = (): number => {
+        if (evaluations.length === 0) return 0;
+        return evaluations[0].score ?? 0; // evaluations[0] is the latest, sorted by date descending
+    };
 
     const getLatestStatus = (): EvaluationStatus => {
         if (evaluations.length === 0) return 'not_started';
         return scoreToStatus(evaluations[0].score); // evaluations[0] is the latest, sorted by date descending
-    };
-
-    const getStatusIndicator = (status: EvaluationStatus) => {
-        switch (status) {
-            case 'mastery': return '🟢';
-            case 'proficient': return '🟡';
-            case 'developing': return '🟠';
-            case 'not_started': return '🔴';
-            default: return '🔴';
-        }
     };
 
     return (
@@ -173,47 +193,30 @@ export default function StationDetail() {
             <section id="center">
                 <div>
                     <h1>{station.name}</h1>
-                    <div className="station-status">
-                        <div className="status-indicator">{getStatusIndicator(getLatestStatus())}</div>
-                        <div className="status-text">
-                            <div className="status-label">Current Status</div>
-                            <div className="status-value">{getStatusLabel(getLatestStatus())}</div>
+                    <div
+                        key={station.id}
+                        className={`station-row ${getLatestStatus()}`}
+                    >
+                        <progress className={`station-progress ${getLatestStatus()}`} value={getLatestScore()}></progress>
+                        <div className="station-info">
+                            <div className={`station-status ${getLatestStatus()}`}>
+                                {getLatestStatus() === 'mastery' ?
+                                    <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
+                                        <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                                    </svg> : (getLatestStatus() === 'proficient' ?
+                                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)">
+                                    <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                </svg> : <></>)}
+                                {getStatusLabel(getLatestStatus())}
+                            </div>
+                            {evaluations.length > 0 && evaluations[0].createdAt ? 
+                            <div className="evaluation-date">
+                                Last tested {new Date(evaluations[0].createdAt).toLocaleDateString()}
+                            </div> : <></>}
                         </div>
                     </div>
 
-                    {station.criteria.length > 0 && (
-                        <div className="criteria-summary">
-                            <h3>What to strive for</h3>
-                            <ul>
-                                {station.criteria.map((c) => (
-                                    <li key={c}>{c}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    {station.role !== 'participant' && station.instructorNotes && station.instructorNotes.length > 0 && (
-                        <div className="instructor-notes-summary">
-                            <h3>Instructor Notes</h3>
-                            <ul>
-                                {station.instructorNotes.map((note) => (
-                                    <li key={note}>{note}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
                     <div className="queue-panel">
-                        <h3>Evaluation Queue</h3>
-                        {queueError && <div className="error-message">{queueError}</div>}
-                        {queueMessage && <div className="success-message">{queueMessage}</div>}
-                        <div className="queue-status">
-                            {isInQueue() ? (
-                                <p>You are in the queue at position {queuePosition()}.</p>
-                            ) : (
-                                <p>You are not in the queue.</p>
-                            )}
-                        </div>
                         <div className="queue-actions">
                             {isInQueue() ? (
                                 <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
@@ -223,17 +226,92 @@ export default function StationDetail() {
                                 <button className="button primary" onClick={joinQueue}>Join Queue</button>
                             )}
                         </div>
-                        {queue.length > 0 && (
-                            <div className="queue-list">
-                                <h4>Current queue</h4>
-                                <ol>
-                                    {queue.map((entry) => (
-                                        <li key={entry.id}>{entry.name} {entry.position === 1 ? '(next)' : ''}</li>
-                                    ))}
-                                </ol>
-                            </div>
-                        )}
+                        <div className="queue-status">
+                            {isInQueue() && (
+                                <p>{
+                                    queuePosition() != 2 ? (
+                                        queuePosition() != 1 ? 
+                                            `There are ${(queuePosition() ?? 1) - 1} people ahead of you for evaluation.` :
+                                            'You are first in line for evaluation.'
+                                    ) : 'There is 1 person ahead of you for evaluation.'
+                                    
+                                }</p>
+                            )}
+                        </div>
+                        {queueError && <div className="error-message">{queueError}</div>}
+                        {queueMessage && <div className="success-message">{queueMessage}</div>}
                     </div>
+
+                    {station.criteria.length > 0 ? (
+                        <div className="criteria-summary">
+                            <div className="evaluation-criteria-list">
+
+                                    {evaluations.length > 0 && evaluations[0].criteria ? (
+                                    evaluations[0].criteria.length > 0 ? (
+                                    <ul>
+                                        {evaluations[0].criteria.map((state: StationCriterionState, index: number) => (
+                                            <li key={index}>
+                                                <div
+                                                    key={state.name}
+                                                    className={`station-row ${getLatestStatus()}`}
+                                                >
+                                                    <div className="station-info">
+                                                        <div className="station-name">
+                                                            {state.name}
+                                                        </div>
+                                                        <div className={`station-status ${state.status}`}>
+                                                            {state.status === 'mastery' ?
+                                                                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
+                                                                    <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                                </svg> : (state.status === 'proficient' ?
+                                                            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)"><path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                            </svg> : <></>)}
+                                                            {getStatusLabel(state.status)}
+                                                        </div>
+                                                    </div>
+                                                    <progress className={`station-progress ${state.status}`} value={getStatusValue(state.status)}></progress>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                            ) : (
+                                <span className="evaluation-score">Score: {evaluations[0].score}%</span>
+                            )) : (
+                                <ul>
+                                    {station.criteria.map((name: string, index: number) => (
+                                        <li key={index}>
+                                            <div
+                                                key={station.id}
+                                                className={`station-row ${getLatestStatus()}`}
+                                            >
+                                                <div className="station-info">
+                                                    <div className="station-name">
+                                                        {name}
+                                                    </div>
+                                                    <div className={`station-status not_started`}>
+                                                        {getStatusLabel('not_started')}
+                                                    </div>
+                                                </div>
+                                                <progress className={`station-progress not_started`} value={getStatusValue('not_started')}></progress>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            </div>
+                        </div>
+                    ) : <></>}
+
+                    {/*station.role !== 'participant' && station.instructorNotes && station.instructorNotes.length > 0 && (
+                        <div className="instructor-notes-summary">
+                            <h3>Instructor Notes</h3>
+                            <ul>
+                                {station.instructorNotes.map((note) => (
+                                    <li key={note}>{note}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )*/}
 
                     {!showHistory ? (
                         <div className="evaluated-view">
@@ -242,7 +320,7 @@ export default function StationDetail() {
                                     <div className="evaluation-header-section">
                                         <h3>Latest Evaluation</h3>
                                         <button
-                                            className="button secondary refresh-btn"
+                                            className="refresh-btn"
                                             onClick={loadEvaluations}
                                             title="Refresh evaluations"
                                         >
@@ -251,16 +329,33 @@ export default function StationDetail() {
                                     </div>
                                     <div className="evaluation-item latest">
                                         <div className="evaluation-header">
-                                            <span className="evaluation-date">
-                                                {evaluations[0].createdAt ? new Date(evaluations[0].createdAt).toLocaleDateString() : 'Unknown date'}
-                                            </span>
                                         </div>
                                         {evaluations[0].criteria && evaluations[0].criteria.length > 0 ? (
                                             <div className="evaluation-criteria-list">
-                                                <h4>Criteria Results</h4>
                                                 <ul>
-                                                    {evaluations[0].criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
+                                                    {evaluations[0].criteria.map((state: StationCriterionState, index: number) => (
+                                                        <li key={index}>
+                                                            <div
+                                                                key={station.id}
+                                                                className={`station-row ${getLatestStatus()}`}
+                                                            >
+                                                                <div className="station-info">
+                                                                    <div className="station-name">
+                                                                        {state.name}
+                                                                    </div>
+                                                                    <div className={`station-status ${state.status}`}>
+                                                                        {state.status === 'mastery' ?
+                                                                            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
+                                                                                <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                                            </svg> : (state.status === 'proficient' ?
+                                                                        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)"><path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                                        </svg> : <></>)}
+                                                                        {getStatusLabel(state.status)}
+                                                                    </div>
+                                                                </div>
+                                                                <progress className={`station-progress ${state.status}`} value={getStatusValue(state.status)}></progress>
+                                                            </div>
+                                                        </li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -269,22 +364,23 @@ export default function StationDetail() {
                                         )}
                                         {evaluations[0].comments && (
                                             <div className="evaluation-comments">
+                                                <h4>Evaluator Comments</h4>
                                                 {evaluations[0].comments}
                                             </div>
                                         )}
                                     </div>
                                     {evaluations.length > 1 && (
                                         <button
-                                            className="button secondary history-btn"
+                                            className="history-btn"
                                             onClick={() => setShowHistory(true)}
                                         >
-                                            📋 View Full History ({evaluations.length} evaluations)
+                                            View Full History ({evaluations.length} evaluations)
                                         </button>
                                     )}
                                 </div>
                             ) : (
                                 <div className="no-evaluations">
-                                    <p>No evaluations yet for this station.</p>
+                                    <p>No evaluation history yet for this station.</p>
                                 </div>
                             )}
                         </div>
@@ -294,7 +390,7 @@ export default function StationDetail() {
                                 <div className="history-header">
                                     <h3>Evaluation History</h3>
                                     <button
-                                        className="button secondary back-btn"
+                                        className="back-btn"
                                         onClick={() => setShowHistory(false)}
                                     >
                                         ← Back to Latest
@@ -309,10 +405,30 @@ export default function StationDetail() {
                                         </div>
                                         {evaluation.criteria && evaluation.criteria.length > 0 ? (
                                             <div className="evaluation-criteria-list">
-                                                <h4>Criteria Results</h4>
                                                 <ul>
-                                                    {evaluation.criteria.map((status: string, index: number) => (
-                                                        <li key={index}>{`Criteria ${index + 1}: ${capitalize(status)}`}</li>
+                                                    {evaluation.criteria.map((state: StationCriterionState, index: number) => (
+                                                        <li key={index}>
+                                                            <div
+                                                                key={station.id}
+                                                                className={`station-row ${getLatestStatus()}`}
+                                                            >
+                                                                <div className="station-info">
+                                                                    <div className="station-name">
+                                                                        {state.name}
+                                                                    </div>
+                                                                    <div className={`station-status ${state.status}`}>
+                                                                        {state.status === 'mastery' ?
+                                                                            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
+                                                                                <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                                            </svg> : (state.status === 'proficient' ?
+                                                                        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)"><path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                                                        </svg> : <></>)}
+                                                                        {getStatusLabel(state.status)}
+                                                                    </div>
+                                                                </div>
+                                                                <progress className={`station-progress ${state.status}`} value={getStatusValue(state.status)}></progress>
+                                                            </div>
+                                                        </li>
                                                     ))}
                                                 </ul>
                                             </div>

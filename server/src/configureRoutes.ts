@@ -142,10 +142,15 @@ export default function configureRoutes(routes: Hono, db: Database) {
             return;
         }
 
+        const station = await db.getStationById(stationId);
+        if (!station) {
+            return;
+        }
+
         const first = queue[0];
         await db.createNotification({
-            title: `You're first in line for Station ${stationId}`,
-            message: `You are now first in the queue for Station ${stationId}. Please be ready for evaluation.`,
+            title: `You're first in line for ${station.name}`,
+            message: `You are now first in the queue for ${station.name}. Please be ready for evaluation.`,
             senderId,
             senderName,
             recipientId: first.userId,
@@ -334,7 +339,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
             stationId: number;
             score?: number;
             comments?: string;
-            criteria?: string[];
+            criteria?: {
+                name: string,
+                status: string
+            }[];
             feedbackItems?: string[];
             overallStatus?: string;
         };

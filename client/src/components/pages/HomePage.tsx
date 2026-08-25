@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from '@client/stores/UserManager';
 import { useState, useEffect } from "react";
@@ -22,8 +22,8 @@ const getStatusLabel = (status: EvaluationStatus) => {
         case 'proficient': return 'Proficient';
         case 'developing': return 'Developing';
         case 'novice': return 'Novice';
-        case 'not_started': return 'Not Yet Started';
-        default: return 'Not Yet Started';
+        case 'not_started': return 'Not Started';
+        default: return 'Not Started';
     }
 };
 
@@ -70,7 +70,7 @@ export default function HomePage() {
 
     const getStationScore = (stationId: number): number => {
         const latest = getLatestStationEvaluation(evaluations, stationId);
-        return (latest?.score ?? 0) / 100;
+        return Math.min((latest?.score ?? 0) / 75, 1.0);
     };
 
     const getStationStatus = (stationId: number): EvaluationStatus => {
@@ -90,6 +90,8 @@ export default function HomePage() {
         return hasPassedStation(evaluations, sortedStations[index - 1].id);
     };
 
+    // FIXME: toLocaleString() returns GMT time instead of local time.
+
     return (
         <>
             <section id="center">
@@ -106,7 +108,13 @@ export default function HomePage() {
                             <div className="home-notif-section">
                                 {/* Most recent — prominent card */}
                                 <div className="notif-latest-card">
-                                    <div className="notif-latest-badge">📣 Latest</div>
+                                    <div className="notif-latest-badge">
+                                        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--text-h)">
+                                            <path d="M14 14V6M14 14L20.1023 17.487C20.5023 17.7156 21 17.4268 21 16.9661V3.03391C21 2.57321 20.5023 2.28439 20.1023 2.51296L14 6M14 14H7C4.79086 14 3 12.2091 3 10V10C3 7.79086 4.79086 6 7 6H14" stroke="var(--text-h)" strokeWidth="2"></path>
+                                            <path d="M7.75716 19.3001L7 14H11L11.6772 18.7401C11.8476 19.9329 10.922 21 9.71716 21C8.73186 21 7.8965 20.2755 7.75716 19.3001Z" stroke="#000000" strokeWidth="2"></path>
+                                        </svg>
+                                        Latest
+                                    </div>
                                     <div className="notif-latest-title">{latest.title}</div>
                                     <div className="notif-latest-body">{latest.message}</div>
                                     <div className="notif-latest-meta">
@@ -162,24 +170,43 @@ export default function HomePage() {
                             const score = getStationScore(station.id);
                             const unlocked = isStationUnlocked(station.id);
                             return (
-                                <div
+                                unlocked ? <NavLink
                                     key={station.id}
-                                    className={`station-row ${unlocked ? status : 'locked'}`}
-                                    onClick={() => unlocked && nav(`/station/${station.id}`)}
+                                    className={`station-row ${status}`}
+                                    to={`/station/${station.id}`}
                                 >
                                     <div className="station-info">
-                                        <div className="station-name">{station.name}</div>
+                                        <div className="station-name">
+                                            {station.name}
+                                            <svg width="0.8em" height="0.8em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--text-sh)">
+                                                <path d="M9 6L15 12L9 18" stroke="var(--text-sh)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            </svg>
+                                        </div>
                                         <div className={`station-status ${status}`}>
                                             {status === 'mastery' ?
                                                 <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
                                                     <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                                                 </svg> : (status === 'proficient' ?
-                                            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)"><path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--proficient-color)"><path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" stroke="var(--proficient-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
                                             </svg> : <></>)}
                                             {unlocked ? getStatusLabel(status) : 'Locked'}
                                         </div>
                                     </div>
                                     <progress className={`station-progress ${status}`} value={score}></progress>
+                                </NavLink> : <div
+                                    key={station.id}
+                                    className={`station-row locked`}
+                                    onClick={() => unlocked && nav(`/station/${station.id}`)}
+                                >
+                                    <div className="station-info">
+                                        <div className="station-name">
+                                            {station.name}
+                                        </div>
+                                        <div className={`station-status not_started`}>
+                                            Locked
+                                        </div>
+                                    </div>
+                                    <progress className={`station-progress not_started`} value='0'></progress>
                                 </div>
                             );
                         })}
@@ -191,31 +218,34 @@ export default function HomePage() {
             </section>
             <BottomNav />
             <style>{`
-                .home-notif-section { margin-bottom: 1.25rem; }
+                .home-notif-section { margin: 1.25rem auto; max-width: 700px; }
                 .notif-latest-card {
-                    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-                    border: 1.5px solid #93c5fd;
+                    background: linear-gradient(135deg, var(--soft-tone) 0%, var(--soft-tone-alt) 100%);
+                    border: 1.5px solid var(--husky-purple);
                     border-radius: 12px;
                     padding: 1rem 1.1rem;
                 }
                 .notif-latest-badge {
                     font-size: 0.75rem;
                     font-weight: 700;
-                    color: #1d4ed8;
+                    color: var(--text-h);
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     margin-bottom: 0.35rem;
+
+                    svg {
+                        vertical-align: center;
+                        padding-right: 0.3rem;
+                    }
                 }
-                .notif-latest-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; }
-                .notif-latest-body { font-size: 0.9rem; color: #374151; margin-bottom: 0.5rem; white-space: pre-line; }
-                .notif-latest-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #9ca3af; }
+                .notif-latest-title { font-size: 1.05rem; color: var(--text-h); font-weight: 700; margin-bottom: 0.3rem; }
+                .notif-latest-body { font-size: 0.9rem; color: var(--text-h); margin-bottom: 0.5rem; white-space: pre-line; }
+                .notif-latest-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sh); }
                 .notif-toggle-btn {
-                    width: 100%;
                     margin-top: 0.6rem;
                     padding: 0.45rem;
                     background: none;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
+                    border: 0px solid #e5e7eb;
                     cursor: pointer;
                     font-size: 0.85rem;
                     color: #6b7280;

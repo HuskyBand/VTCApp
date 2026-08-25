@@ -11,8 +11,11 @@
   --spirit-gold: rgb(var(--spirit-gold-triple));
   --heritage-gold: rgb(var(--heritage-gold-triple));
 
-  --soft-tone: rgba(var(--husky-purple-triple), 40%);
-  --soft-tone-alt: rgba(var(--heritage-gold-triple), 40%);
+  --tone: rgba(var(--husky-purple-triple), 40%);
+  --tone-alt: rgba(var(--heritage-gold-triple), 40%);
+
+  --soft-tone: rgba(var(--husky-purple-triple), 20%);
+  --soft-tone-alt: rgba(var(--heritage-gold-triple), 20%);
   --tone-text: #ffffff;
   
   --text: #6b6375;
@@ -163,7 +166,7 @@ code {
   }
 
   &.primary {
-    background: var(--soft-tone);
+    background: var(--tone);
     color: var(--light-button-text);
 
     &:hover {
@@ -178,7 +181,7 @@ code {
   }
   
   &.secondary {
-    background: var(--soft-tone-alt);
+    background: var(--tone-alt);
     color: var(--light-button-text);
 
     &:hover {
@@ -425,12 +428,12 @@ code {
   padding: 15px 0;
   gap: 10px;
   width: 100%;
-  cursor: pointer;
+  text-decoration: none;
+  color: var(--text)
 }
 
 .station-row.locked {
   opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .station-progress {
@@ -495,12 +498,18 @@ code {
   width: 100%;
   max-width: 400px;
   gap: 16px;
+  font-weight: bold;
+}
+
+.station-name svg {
+  vertical-align: center;
+  padding-left: 0.3em;
 }
 
 .station-status {
   display: flex;
   flex-wrap: nowrap;
-  gap: 16px;
+  gap: 0.3em;
   margin: 0;
 
   &.proficient {
@@ -755,6 +764,18 @@ code {
   margin: 20px 0;
 }
 
+.evaluation-criteria-list {
+  ul {
+    list-style: none;
+    padding-left: 0;
+  }
+}
+
+.evaluation-date {
+    color: var(--text-sh);
+    text-align: right;
+}
+
 .evaluation-results {
   margin: 20px 0;
 }
@@ -857,11 +878,20 @@ code {
 
 .criteria-summary ul {
   margin: 8px 0 0;
-  padding-left: 20px;
+  padding-left: 0;
 }
 
 .mastery-note {
   color: var(--text-sh);
   font-size: 14px;
   font-style: italic;
+}
+
+.queue-panel {
+  max-width: 400px;
+  margin: 20px auto;
+}
+
+.queue-actions {
+  margin-bottom: -20px;
 }

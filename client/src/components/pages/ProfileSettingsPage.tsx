@@ -1,7 +1,7 @@
 import UserManager from '@client/stores/UserManager';
 import BottomNav from '../BottomNav';
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 export default function ProfileSettingsPage() {
     const nav = useNavigate();
@@ -36,16 +36,23 @@ export default function ProfileSettingsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        let ok;
+
         try {
-            await UserManager.updateProfile({
+            ok = await UserManager.updateProfile({
                 email: formData.email,
                 firstName: formData.firstName,
                 lastName: formData.lastName
             });
+        } catch {
+            ok = false;
+        }
+
+        if (ok) {
             setMessage('Profile updated successfully.');
             setError('');
-        } catch {
-            setError('Unable to update profile.');
+        } else {
+            setError('Failed to update profile.');
             setMessage('');
         }
     };
@@ -101,7 +108,7 @@ export default function ProfileSettingsPage() {
                     {message && <p className="success-message">{message}</p>}
                     {error && <p className="error-message">{error}</p>}
                     <button type="submit" className="button primary auth-submit">Update Profile</button>
-                    <a className="button secondary auth-logout">Logout</a>
+                    <NavLink className="button secondary auth-logout" to="/logout">Logout</NavLink>
                 </form>
                 <div className="profile-info">
                     <div className="info-item">

@@ -135,10 +135,10 @@ export default function RegisterPage() {
                                 <option value="Sousaphone">Sousaphone</option>
                             </optgroup>
                             <optgroup label="Drumline">
-                            <option value="Snare Drum">Snare Drum</option>
-                            <option value="Tenor Drums">Tenor Drums</option>
-                            <option value="Bass Drum">Bass Drum</option>
-                            <option value="Cymbals">Cymbals</option>
+                                <option value="Snare Drum">Snare Drum</option>
+                                <option value="Tenor Drums">Tenor Drums</option>
+                                <option value="Bass Drum">Bass Drum</option>
+                                <option value="Cymbals">Cymbals</option>
                             </optgroup>
                         </select>
                     </div>

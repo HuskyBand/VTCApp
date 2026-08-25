@@ -1,7 +1,12 @@
+export type EvaluationCriterionState = {
+    name: string,
+    status: string
+};
+
 export type EvaluationRecord = {
     score?: number;
     stationId: number;
-    criteria?: string[];
+    criteria?: EvaluationCriterionState[];
     createdAt?: string;
 };
 
@@ -54,7 +59,7 @@ const statusLabels: Record<EvaluationStatus, string> = {
     novice: 'Novice',
     developing: 'Developing',
     proficient: 'Satisfactory',
-    mastery: 'Mastery',
+    mastery: 'Mastered',
 };
 
 export const getStatusLabel = (status: EvaluationStatus): string => statusLabels[status];
