@@ -491,11 +491,11 @@ code {
   margin: 0;
 
   &.proficient {
-    background-color: var(--husky-purple);
+    color: var(--husky-purple);
   }
 
   &.mastery {
-    background-color: var(--husky-gold);
+    color: var(--husky-gold);
   }
 }
 
