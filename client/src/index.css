@@ -460,7 +460,7 @@ code {
   &::-webkit-progress-value {
     border-radius: 5px;
     border-width: 0;
-    
+
     background-color: var(--accent);
 
     &.proficient {
@@ -480,7 +480,7 @@ code {
     }
 
     &.mastery {
-      background-color: var(--husky-gold);
+      background-color: var(--mastery-color);
     }
   }
 }

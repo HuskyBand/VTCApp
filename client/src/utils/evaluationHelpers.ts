@@ -11,13 +11,13 @@ export const scoreToStatus = (score?: number | null): EvaluationStatus => {
     if (score === undefined || score === null) {
         return 'not_started';
     }
-    if (score >= 80) {
+    if (score >= 90) {
         return 'mastery';
     }
-    if (score >= 50) {
+    if (score >= 60) {
         return 'proficient';
     }
-    if (score >= 20) {
+    if (score >= 30) {
         return 'developing';
     }
     return 'novice';
