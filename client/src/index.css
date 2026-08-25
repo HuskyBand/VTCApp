@@ -500,9 +500,10 @@ code {
   flex-direction: row;
   justify-content: space-between;
   justify-items: right;
+  align-items: end;
   width: 100%;
   max-width: 400px;
-  gap: 16px;
+  gap: 0.5em;
   font-weight: bold;
 }
 
@@ -519,6 +520,7 @@ code {
   flex-wrap: nowrap;
   gap: 0.3em;
   margin: 0;
+  min-width: fit-content;
 
   &.proficient {
     color: var(--proficient-color);
