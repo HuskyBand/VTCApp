@@ -458,15 +458,26 @@ code {
   }
 
   &::-webkit-progress-value {
+    border-radius: 5px;
+    border-width: 0;
+    
     background-color: var(--accent);
 
+    &.proficient {
+      background-color: var(--proficient-color);
+    }
+
     &.mastery {
-      background-color: var(--husky-gold);
+      background-color: var(--mastery-color);
     }
   }
 
   &::-moz-progress-bar {
     background-color: var(--accent);
+
+    &.proficient {
+      background-color: var(--proficient-color);
+    }
 
     &.mastery {
       background-color: var(--husky-gold);
@@ -491,11 +502,11 @@ code {
   margin: 0;
 
   &.proficient {
-    color: var(--husky-purple);
+    color: var(--proficient-color);
   }
 
   &.mastery {
-    color: var(--husky-gold);
+    color: var(--mastery-color);
   }
 }
 
