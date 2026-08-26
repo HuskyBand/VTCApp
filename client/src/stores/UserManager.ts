@@ -69,6 +69,7 @@ class UserManager {
     private _authToken: string | null = null;
     private _user: User | null = null;
     private handlingSessionExpiry = false;
+    private _userNameCache: Map<number, string> = new Map();
 
     private safeGetAuthToken = (): string | null => {
         return this._authToken;
@@ -210,13 +211,18 @@ class UserManager {
     }
 
     async getNameForId(id: number): Promise<string> {
-        const response = await http.get<{ name: string }>(Endpoints.users.name(id));
-
-        if (!response.ok || !response.body) {
-            return "Unknown User";
+        // Since we call this a LOT, we need to cache the result so we're not spamming web requests.
+        let cached = this._userNameCache.get(id);
+        if (cached) {
+            return cached;
         }
 
-        return response.body.name;
+        const response = await http.get<{ name: string }>(Endpoints.users.name(id));
+
+        let name = (response.ok && response.body) ? response.body.name : "Unknown User";
+        this._userNameCache.set(id, name);
+
+        return name;
     }
 
     async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>> {
