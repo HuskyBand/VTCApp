@@ -16,24 +16,24 @@ type Station = {
     criteria: string[];
 };
 
-const getStatusLabel = (status: EvaluationStatus) => {
+const getStatusLabel = (status: EvaluationStatus | null) => {
     switch (status) {
         case 'mastery': return 'Mastered';
         case 'proficient': return 'Proficient';
         case 'developing': return 'Developing';
         case 'novice': return 'Novice';
         case 'not_started': return 'Not Started';
-        default: return 'Not Started';
+        default: return 'Loading...';
     }
 };
 
 // Assumed to be logged in if this page is loaded.
 export default function HomePage() {
     const nav = useNavigate();
-    const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
+    const [evaluations, setEvaluations] = useState<EvaluationRecord[] | null>(null);
     const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string }>>([]);
     const [showAllNotifs, setShowAllNotifs] = useState(false);
-    const [stations, setStations] = useState<Station[]>([]);
+    const [stations, setStations] = useState<Station[] | null>(null);
     const [stationsError, setStationsError] = useState(false);
 
     useEffect(() => {
@@ -69,16 +69,22 @@ export default function HomePage() {
     };
 
     const getStationScore = (stationId: number): number => {
+        if (!evaluations) return 0;
+
         const latest = getLatestStationEvaluation(evaluations, stationId);
         return Math.min((latest?.score ?? 0) / 75, 1.0);
     };
 
-    const getStationStatus = (stationId: number): EvaluationStatus => {
+    const getStationStatus = (stationId: number): EvaluationStatus | null => {
+        if (!evaluations) return null;
+
         const latest = getLatestStationEvaluation(evaluations, stationId);
         return scoreToStatus(latest?.score);
     };
 
     const isStationUnlocked = (stationId: number): boolean => {
+        if (!evaluations || !stations) return false;
+
         if (UserManager.isElevated || UserManager.isDirector) {
             return true;
         }
@@ -158,14 +164,16 @@ export default function HomePage() {
                                 <button className="button secondary sm" onClick={loadStations} style={{ marginLeft: '0.75rem' }}>Retry</button>
                             </div>
                         )}
-                        {!stationsError && stations.length === 0 && (
+                        {!stationsError && stations ? (stations.length === 0 && (
                             UserManager.isDirector ? (
                                 <p className="no-stations-message">No stations have been set up yet. Add your first station to get started.</p>
                             ) : (
                                 <p className="no-stations-message">No stations have been set up yet. Check back once your director adds some.</p>
                             )
-                        )}
-                        {stations.map(station => {
+                        )) : 
+                            <p className="no-stations-message">Loading...</p>
+                        }
+                        {stations && stations.map(station => {
                             const status = getStationStatus(station.id);
                             const score = getStationScore(station.id);
                             const unlocked = isStationUnlocked(station.id);

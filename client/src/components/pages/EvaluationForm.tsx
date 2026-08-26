@@ -32,14 +32,14 @@ export default function EvaluationForm() {
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
     const [feedbackOptions, setFeedbackOptions] = useState<string[]>([]);
-    const [stationName, setStationName] = useState(`Station ${stationId}`);
+    const [stationName, setStationName] = useState<string | null>(null);
     const [feedbackChecked, setFeedbackChecked] = useState<Set<string>>(new Set());
     const [comments, setComments] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
     const [targetEvaluations, setTargetEvaluations] = useState<EvaluationRecord[]>([]);
     const [stationRole, setStationRole] = useState<StationRole>('participant');
-    const [queue, setQueue] = useState<Array<{ id: number; name: string; userId: number; position: number; requestedAt: string }>>([]);
+    const [queue, setQueue] = useState<Array<{ id: number; name: string; userId: number; position: number; requestedAt: string }> | null>(null);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
     
@@ -312,7 +312,7 @@ export default function EvaluationForm() {
             <section id="center">
                 <div>
                     <h1 className="evaluation-headertext">Evaluate</h1>
-                    <h2 className="evaluation-subheadertext">{stationName}</h2>
+                    <h2 className="evaluation-subheadertext">{stationName ?? 'Loading...'}</h2>
                     <div className="evaluation-form">
 
                         {/* Student selection */}
@@ -335,14 +335,19 @@ export default function EvaluationForm() {
                                     <h3>Queue</h3>
                                     {queueError && <div className="error-message">{queueError}</div>}
                                     {queueMessage && <div className="success-message">{queueMessage}</div>}
-                                    <p>{queue.length ? `${queue.length} student${queue.length != 1 ? 's' : ''} waiting.` : 'No one is waiting in the queue yet.'}</p>
-                                    {queue.length !== 0 && (<button
-                                        className="button primary submit-btn"
-                                        onClick={handleTakeNext}
-                                        disabled={!queue.length}
-                                    >
-                                        Pull Next Student
-                                    </button>)}
+                                    {queue ?
+                                        <>
+                                            <p>{queue.length ? `${queue.length} student${queue.length != 1 ? 's' : ''} waiting.` : 'No one is waiting in the queue yet.'}</p>
+                                            {queue.length !== 0 && (<button
+                                                className="button primary submit-btn"
+                                                onClick={handleTakeNext}
+                                                disabled={!queue.length}
+                                            >
+                                                Pull Next Student
+                                            </button>)}
+                                        </>
+                                     : <p>Loading...</p>
+                                    }
                                 </div>
 
                                 {/* QR Scanner */}

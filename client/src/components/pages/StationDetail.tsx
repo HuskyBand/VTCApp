@@ -20,18 +20,18 @@ type StationEvaluation = {
     createdAt?: string;
 };
 
-const getStatusLabel = (status: string) => {
+const getStatusLabel = (status: string | null) => {
     switch (status) {
         case 'mastery': return 'Mastered';
         case 'proficient': return 'Proficient';
         case 'developing': return 'Developing';
         case 'novice': return 'Novice';
         case 'not_started': return 'Not Started';
-        default: return 'Not Started';
+        default: return 'Loading...';
     }
 };
 
-const getStatusValue = (status: string) => {
+const getStatusValue = (status: string | null) => {
     switch (status) {
         case 'mastery': return 1;
         case 'proficient': return 1;
@@ -44,12 +44,12 @@ const getStatusValue = (status: string) => {
 
 export default function StationDetail() {
     const { id } = useParams();
-    const [evaluations, setEvaluations] = useState<StationEvaluation[]>([]);
+    const [evaluations, setEvaluations] = useState<StationEvaluation[] | null>(null);
     const [showHistory, setShowHistory] = useState(false);
     const [queue, setQueue] = useState<Array<{ id: number; userId: number; name: string; position: number; requestedAt: string }>>([]);
     const [queueError, setQueueError] = useState('');
     const [queueMessage, setQueueMessage] = useState('');
-    const [station, setStation] = useState<{ id: number; name: string; criteria: string[]; role: StationRole; instructorNotes?: string[] }>({ id: Number(id), name: `Station ${id}`, criteria: [], role: 'participant' });
+    const [station, setStation] = useState<{ id: number; name: string; criteria: string[]; role: StationRole; instructorNotes?: string[] }>({ id: Number(id), name: `Loading...`, criteria: [], role: 'participant' });
 
     useEffect(() => {
         if (!id) return;
@@ -133,7 +133,7 @@ export default function StationDetail() {
         }
     };
 
-    const atMastery = isMasteryLocked(evaluations, Number(id));
+    const atMastery = evaluations && isMasteryLocked(evaluations, Number(id));
 
     const isInQueue = () => queue.some((entry) => entry.userId === UserManager.currentUser.id);
     const queuePosition = () => {
@@ -180,11 +180,12 @@ export default function StationDetail() {
     };
 
     const getLatestScore = (): number => {
-        if (evaluations.length === 0) return 0;
+        if (!evaluations || evaluations.length === 0) return 0;
         return Math.min((evaluations[0].score ?? 0) / 75, 1); // evaluations[0] is the latest, sorted by date descending
     };
 
-    const getLatestStatus = (): EvaluationStatus => {
+    const getLatestStatus = (): EvaluationStatus | null => {
+        if (!evaluations) return null;
         if (evaluations.length === 0) return 'not_started';
         return scoreToStatus(evaluations[0].score); // evaluations[0] is the latest, sorted by date descending
     };
@@ -198,9 +199,9 @@ export default function StationDetail() {
                         key={station.id}
                         className={`station-row ${getLatestStatus()}`}
                     >
-                        <progress className={`station-progress ${getLatestStatus()}`} value={getLatestScore()}></progress>
+                        <progress className={`station-progress ${getLatestStatus() ?? 'not_started'}`} value={getLatestScore()}></progress>
                         <div className="station-info">
-                            <div className={`station-status ${getLatestStatus()}`}>
+                            <div className={`station-status ${getLatestStatus() ?? 'not_started'}`}>
                                 {getLatestStatus() === 'mastery' ?
                                     <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--mastery-color)">
                                         <path d="M8.58737 8.23597L11.1849 3.00376C11.5183 2.33208 12.4817 2.33208 12.8151 3.00376L15.4126 8.23597L21.2215 9.08017C21.9668 9.18848 22.2638 10.0994 21.7243 10.6219L17.5217 14.6918L18.5135 20.4414C18.6409 21.1798 17.8614 21.7428 17.1945 21.3941L12 18.678L6.80547 21.3941C6.1386 21.7428 5.35909 21.1798 5.48645 20.4414L6.47825 14.6918L2.27575 10.6219C1.73617 10.0994 2.03322 9.18848 2.77852 9.08017L8.58737 8.23597Z" fill="var(--mastery-color)" stroke="var(--mastery-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -210,14 +211,14 @@ export default function StationDetail() {
                                 </svg> : <></>)}
                                 {getStatusLabel(getLatestStatus())}
                             </div>
-                            {evaluations.length > 0 && evaluations[0].createdAt ? 
+                            {evaluations && evaluations.length > 0 && evaluations[0].createdAt ? 
                             <div className="evaluation-date">
                                 Last tested {new Date(evaluations[0].createdAt).toLocaleDateString()}
                             </div> : <></>}
                         </div>
                     </div>
 
-                    <div className="queue-panel">
+                    {evaluations ? (<div className="queue-panel">
                         <div className="queue-actions">
                             {isInQueue() ? (
                                 <div className="queue-participant-actions">
@@ -295,20 +296,22 @@ export default function StationDetail() {
                         </div>
                         {queueError && <div className="error-message">{queueError}</div>}
                         {queueMessage && <div className="success-message">{queueMessage}</div>}
-                    </div>
+                    </div>) : (
+                        <></>
+                    )}
 
                     {station.criteria.length > 0 ? (
                         <div className="criteria-summary">
                             <div className="evaluation-criteria-list">
 
-                                    {evaluations.length > 0 && evaluations[0].criteria ? (
+                                {evaluations && evaluations.length > 0 && evaluations[0].criteria ? (
                                     evaluations[0].criteria.length > 0 ? (
                                     <ul>
                                         {evaluations[0].criteria.map((state: StationCriterionState, index: number) => (
                                             <li key={index}>
                                                 <div
                                                     key={state.name}
-                                                    className={`station-row ${getLatestStatus()}`}
+                                                    className={`station-row ${state.status}`}
                                                 >
                                                     <div className="station-info">
                                                         <div className="station-name">
@@ -337,17 +340,18 @@ export default function StationDetail() {
                                         <li key={index}>
                                             <div
                                                 key={station.id}
-                                                className={`station-row ${getLatestStatus()}`}
+                                                className="station-row not_started"
                                             >
                                                 <div className="station-info">
                                                     <div className="station-name">
-                                                        {name}
+                                                        {evaluations ? name : 'Loading...'}
                                                     </div>
                                                     <div className={`station-status not_started`}>
-                                                        {getStatusLabel('not_started')}
+                                                        {getStatusLabel(evaluations ? 'not_started' : null)}
                                                     </div>
                                                 </div>
-                                                <progress className={`station-progress not_started`} value={getStatusValue('not_started')}></progress>
+                                                <progress className={`station-progress ${evaluations ? 'not_started' : null}`}
+                                                    value={getStatusValue(evaluations ? 'not_started' : null)}></progress>
                                             </div>
                                         </li>
                                     ))}
@@ -370,7 +374,7 @@ export default function StationDetail() {
 
                     {!showHistory ? (
                         <div className="evaluated-view">
-                            {evaluations.length > 0 ? (
+                            {evaluations ? (evaluations.length > 0 ? (
                                 <div className="latest-evaluation">
                                     <div className="evaluation-header-section">
                                         <h3>Latest Evaluation</h3>
@@ -437,10 +441,13 @@ export default function StationDetail() {
                                 <div className="no-evaluations">
                                     <p>No evaluation history yet for this station.</p>
                                 </div>
-                            )}
+                            )) : 
+                                <div className="no-evaluations">
+                                    <p>Loading...</p>
+                                </div>}
                         </div>
                     ) : (
-                        evaluations.length > 0 && (
+                        evaluations && evaluations.length > 0 && (
                             <div className="evaluation-history">
                                 <div className="history-header">
                                     <h3>Evaluation History</h3>
