@@ -1011,6 +1011,8 @@ code {
   margin: 0.75rem 0;
   padding: 0.75rem 1rem;
   display: flex;
+  align-content: center;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;

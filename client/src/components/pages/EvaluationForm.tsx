@@ -188,7 +188,10 @@ export default function EvaluationForm() {
     const handleEvaluateScanned = () => {
         if (!scannedUser) return;
         const found = allUsers.find((u) => u.id === scannedUser.id);
-        if (found) setSelectedUser(found);
+        if (found) {
+            setSelectedUser(found);
+            setScannedUser(null);
+        }
     };
 
     const handleUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -357,7 +360,7 @@ export default function EvaluationForm() {
                                     {scannedUser && (
                                         <div className="scanned-student">
                                             <strong>Scanned:</strong> {scannedUser.name}
-                                            <button className="button primary" onClick={handleEvaluateScanned} style={{ marginLeft: '1rem' }}>
+                                            <button className="button primary" onClick={handleEvaluateScanned}>
                                                 Evaluate Now
                                             </button>
                                         </div>
