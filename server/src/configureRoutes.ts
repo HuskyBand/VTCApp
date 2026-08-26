@@ -345,7 +345,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const currentUser = await db.getUserById(currentUserId);
         
         // TODO: Should be masked with LevelMask if we add more flags.
-        if (!currentUser || currentUser.permFlags !== PermFlags.IsDirector) {
+        if (!currentUser || (currentUserId !== targetUserId &&
+                currentUser.permFlags !== PermFlags.IsDirector)) {
             return c.json({ error: 'Forbidden' }, 403);
         }
 

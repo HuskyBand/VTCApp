@@ -65,10 +65,17 @@ type AdminOverview = {
     totalNotifications: number;
 };
 
+type CacheFlags = {
+    referenceVisible: boolean,
+}
+
 /** Manages the client user state. */
 class UserManager {
     private _authToken: string | null = null;
     private _user: User | null = null;
+    private _cacheFlags: CacheFlags = {
+        referenceVisible: false
+    };
     private handlingSessionExpiry = false;
     private _userNameCache: Map<number, string> = new Map();
 
@@ -80,7 +87,8 @@ class UserManager {
         if (this.isLoggedIn) {
             localStorage.setItem('user_data', JSON.stringify({
                 _authToken: this._authToken,
-                _user: this._user
+                _user: this._user,
+                _cacheFlags: this._cacheFlags
             }));
         } else {
             localStorage.removeItem('user_data');
@@ -94,11 +102,15 @@ class UserManager {
             const parsed = JSON.parse(data) as {
                 _authToken: string | null;
                 _user: User | null;
+                _cacheFlags: CacheFlags | null;
             } | undefined;
 
             if (parsed) {
                 this._authToken = parsed._authToken;
                 this._user = parsed._user;
+                this._cacheFlags = parsed._cacheFlags ?? {
+                    referenceVisible: false
+                };
                 return;
             }
         }
@@ -153,6 +165,10 @@ class UserManager {
         }
 
         return (this._user!.permFlags & PermFlags.LevelMask) == PermFlags.IsDirector;
+    }
+
+    get cacheFlags(): CacheFlags {
+        return this._cacheFlags;
     }
 
     /** Clears the local auth cache, essentially logging the client out of the current account. */
@@ -334,13 +350,31 @@ class UserManager {
 
     async setStationRole(userId: number, stationId: number, role: StationRole): Promise<boolean> {
         const response = await http.put(Endpoints.users.stationRole(userId, stationId), { role });
+
         return response.ok;
     }
 
     async getUserStationRoles(userId: number): Promise<Array<{ stationId: number; stationName: string; role: StationRole }>> {
         const response = await http.get(Endpoints.users.stationRoles(userId));
         if (!response.ok || !response.body) return [];
-        return response.body as Array<{ stationId: number; stationName: string; role: StationRole }>;
+
+        let roles = response.body as Array<{ stationId: number; stationName: string; role: StationRole }>;
+
+        let has = roles.findIndex((s) => {
+            if (s.role !== 'participant') {
+                this.saveToStorage();
+                return true;
+            }
+
+            return false;
+        }) >= 0;
+
+        if (has !== this._cacheFlags.referenceVisible) {
+            this._cacheFlags.referenceVisible = has;
+            this.saveToStorage();
+        }  
+        
+        return roles;
     }
 
     // Station management

@@ -5,7 +5,11 @@ import UserManager from "@client/stores/UserManager";
 export default function BottomNav() {
     const canViewAdmin = UserManager.isDirector;
     // const [canEvaluateAnywhere, setCanEvaluateAnywhere] = useState(UserManager.isDirector || UserManager.isElevated);
-    const [hasAnyStationRole, setHasAnyStationRole] = useState(UserManager.isDirector || UserManager.isElevated);
+    const [hasAnyStationRole, setHasAnyStationRole] = useState(
+        UserManager.isDirector ||
+        UserManager.isElevated ||
+        UserManager.cacheFlags.referenceVisible
+    );
 
     useEffect(() => {
         const loadStationAccess = async () => {
@@ -17,7 +21,7 @@ export default function BottomNav() {
                 return;
             }
             try {
-                const stations = await UserManager.getStations();
+                const stations = await UserManager.getUserStationRoles(UserManager.currentUser.id!);
                 // const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
                 const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'instructor');
                 // setCanEvaluateAnywhere(evaluatorSomewhere);
