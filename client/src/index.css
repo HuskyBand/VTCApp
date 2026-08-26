@@ -334,6 +334,15 @@ code {
   color: #888;
 }
 
+.criteria-legend {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: #888;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .criteria-form-list {
   margin: 20px 0;
 }

@@ -393,6 +393,9 @@ export default function EvaluationForm() {
                             {criteria.length > 0 ? (
                                 <div className="criteria-form-list">
                                     <h3>Criteria</h3>
+                                    <div className="criteria-legend">
+                                        <span>(N)ovice</span><span>(D)eveloping</span><span>(P)roficient</span><span>(M)astery</span>
+                                    </div>
                                     {criteria.map((criterion, idx) => (
                                         <div key={idx} className="criteria-form-row">
                                             <div className="criteria-name">{criterion.name}</div>
