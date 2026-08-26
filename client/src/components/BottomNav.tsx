@@ -4,7 +4,7 @@ import UserManager from "@client/stores/UserManager";
 
 export default function BottomNav() {
     const canViewAdmin = UserManager.isDirector;
-    const [canEvaluateAnywhere, setCanEvaluateAnywhere] = useState(UserManager.isDirector || UserManager.isElevated);
+    // const [canEvaluateAnywhere, setCanEvaluateAnywhere] = useState(UserManager.isDirector || UserManager.isElevated);
     const [hasAnyStationRole, setHasAnyStationRole] = useState(UserManager.isDirector || UserManager.isElevated);
 
     useEffect(() => {
@@ -12,18 +12,18 @@ export default function BottomNav() {
             if (!UserManager.isLoggedIn) return;
 
             if (UserManager.isDirector || UserManager.isElevated) {
-                setCanEvaluateAnywhere(true);
+                // setCanEvaluateAnywhere(true);
                 setHasAnyStationRole(true);
                 return;
             }
             try {
                 const stations = await UserManager.getStations();
-                const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
+                // const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
                 const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'instructor');
-                setCanEvaluateAnywhere(evaluatorSomewhere);
+                // setCanEvaluateAnywhere(evaluatorSomewhere);
                 setHasAnyStationRole(roleSomewhere);
             } catch {
-                setCanEvaluateAnywhere(false);
+                // setCanEvaluateAnywhere(false);
                 setHasAnyStationRole(false);
             }
         };
