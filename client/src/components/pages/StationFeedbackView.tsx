@@ -10,6 +10,7 @@ type StationInfo = {
     feedbackItems: string[];
     role?: string;
     instructorNotes?: string[];
+    testInstructions?: string[];
 };
 
 export default function StationFeedbackView() {
@@ -59,12 +60,18 @@ export default function StationFeedbackView() {
                                 </button>
                                 {expandedId === station.id && (
                                     <div className="sfv-body">
-                                        <div className="sfv-col">
-                                            <h4>Evaluation Criteria</h4>
-                                            {station.criteria.length > 0
+                                        {station.instructorNotes && <div className="sfv-col">
+                                            <h4>Teaching Points</h4>
+                                            {station.instructorNotes.length > 0
+                                                ? <ul>{station.instructorNotes.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                                                : <p className="sfv-empty">No teaching points defined.</p>}
+                                        </div>}
+                                        {station.testInstructions && <div className="sfv-col">
+                                            <h4>Test Instructions</h4>
+                                            {station.testInstructions.length > 0
                                                 ? <ul>{station.criteria.map((c, i) => <li key={i}>{c}</li>)}</ul>
-                                                : <p className="sfv-empty">No criteria defined.</p>}
-                                        </div>
+                                                : <p className="sfv-empty">No test instructions defined.</p>}
+                                        </div>}
                                         <div className="sfv-col">
                                             <h4>Common Feedback Areas</h4>
                                             {station.feedbackItems.length > 0
@@ -80,13 +87,14 @@ export default function StationFeedbackView() {
             </section>
             <BottomNav />
             <style>{`
-                .sfv-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+                .sfv-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 0 auto; margin-top: 1rem; max-width: 800px; }
                 .sfv-card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
                 .sfv-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.1rem; background: #f9fafb; border: none; cursor: pointer; font-size: 1rem; }
                 .sfv-toggle:hover { background: #f3f4f6; }
-                .sfv-name { font-weight: 700; }
+                .sfv-name { font-weight: 700; color: var(--text); }
                 .sfv-chevron { color: #9ca3af; }
                 .sfv-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; padding: 1rem 1.1rem 1.25rem; background: white; }
+                .sfv-col { text-align: left; }
                 .sfv-col h4 { margin: 0 0 0.5rem; font-size: 0.9rem; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; }
                 .sfv-col ul { margin: 0; padding-left: 1.25rem; }
                 .sfv-col li { font-size: 0.9rem; margin-bottom: 0.2rem; }

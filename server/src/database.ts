@@ -11,6 +11,7 @@ export type Station = {
     criteria: string[];
     feedbackItems: string[];
     instructorNotes: string[];
+    testInstructions: string[];
     createdAt?: string;
 };
 
@@ -100,6 +101,7 @@ export class Database {
                     criteria TEXT NOT NULL, -- JSON array of criteria
                     feedbackItems TEXT NOT NULL DEFAULT '[]',
                     instructorNotes TEXT NOT NULL DEFAULT '[]',
+                    testInstructions TEXT NOT NULL DEFAULT '[]',
                     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
