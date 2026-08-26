@@ -43,6 +43,7 @@ type AdminOverviewStation = {
     mastery: number;
     proficient: number;
     developing: number;
+    novice: number;
     notStarted: number;
     evaluatorCount: number;
     totalUsers: number;

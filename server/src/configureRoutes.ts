@@ -163,6 +163,12 @@ export default function configureRoutes(routes: Hono, db: Database) {
         const evaluations = await db.getAllEvaluations();
         const allStations = await db.getAllStations();
 
+        let memberCount = 0;
+        users.forEach((u) => {
+            // TODO: Should be masked with LevelMask if we add more flags.
+            if (u.permFlags === PermFlags.IsBandMember) ++memberCount;
+        })
+
         const latestByUserStation = new Map<string, { score?: number }>();
         evaluations.forEach((evaluation) => {
             const key = `${evaluation.userId}:${evaluation.stationId}`;
@@ -176,21 +182,27 @@ export default function configureRoutes(routes: Hono, db: Database) {
             let mastery = 0;
             let proficient = 0;
             let developing = 0;
+            let novice = 0;
             let notStarted = 0;
             let evaluatorCount = 0;
 
             await Promise.all(users.map(async (user) => {
                 const key = `${user.id}:${stationId}`;
                 const latest = latestByUserStation.get(key);
-
-                if (!latest || latest.score === null || latest.score === undefined) {
-                    notStarted += 1;
-                } else if (latest.score >= 80) {
-                    mastery += 1;
-                } else if (latest.score >= 50) {
-                    proficient += 1;
-                } else {
-                    developing += 1;
+                
+                // TODO: Should be masked with LevelMask if we add more flags.
+                if (user.permFlags === PermFlags.IsBandMember) {
+                    if (!latest || latest.score === null || latest.score === undefined) {
+                        notStarted += 1;
+                    } else if (latest.score >= 90) {
+                        mastery += 1;
+                    } else if (latest.score >= 60) {
+                        proficient += 1;
+                    } else if (latest.score >= 30) {
+                        developing += 1;
+                    } else {
+                        novice += 1;
+                    }
                 }
 
                 const role = await resolveStationRole(db, user, stationId);
@@ -205,9 +217,10 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 mastery,
                 proficient,
                 developing,
+                novice,
                 notStarted,
                 evaluatorCount,
-                totalUsers: users.length
+                totalUsers: memberCount
             };
         }));
 

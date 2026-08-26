@@ -4,7 +4,7 @@ import UserManager from "@client/stores/UserManager";
 const LAST_SEEN_KEY = 'last_seen_broadcast_id';
 const DISMISS_COOLDOWN_MS = 3000;
 
-export default function BroadcastPopup() {
+export default function StatonEditPopup() {
     const [broadcast, setBroadcast] = useState<{ id: number; title: string; message: string; senderName: string } | null>(null);
     const [canDismiss, setCanDismiss] = useState(false);
     const hasStoredLastSeen = localStorage.getItem(LAST_SEEN_KEY) !== null;
