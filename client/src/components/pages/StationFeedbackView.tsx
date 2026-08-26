@@ -15,7 +15,7 @@ type StationInfo = {
 
 export default function StationFeedbackView() {
     const nav = useNavigate();
-    const [stations, setStations] = useState<StationInfo[]>([]);
+    const [stations, setStations] = useState<StationInfo[] | null>(null);
     const [error, setError] = useState('');
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -47,9 +47,10 @@ export default function StationFeedbackView() {
                     <h1>Station Reference</h1>
                     <p>Evaluation criteria and common feedback areas for each station — for teaching reference.</p>
                     {error && <div className="message error-message">{error}</div>}
-                    {stations.length === 0 && !error && <p>No stations configured yet.</p>}
+                    {stations ? (stations.length === 0 && !error && <p>No stations configured yet.</p>) :
+                    (<p>Loading...</p>)}
                     <div className="sfv-list">
-                        {stations.map((station) => (
+                        {stations && stations.map((station) => (
                             <div key={station.id} className="sfv-card">
                                 <button
                                     className="sfv-toggle"
