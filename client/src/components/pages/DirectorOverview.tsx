@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
 import { scoreToStatus, getLatestStationEvaluation, type EvaluationRecord } from '@client/utils/evaluationHelpers';
@@ -13,7 +13,6 @@ type StationSummary = {
 };
 type ActivityItem = { id: number; evaluatorName: string; evaluatedName: string; stationName: string; score?: number; createdAt: string };
 type OverviewData = { stations: StationSummary[]; activity: ActivityItem[]; totalUsers: number; totalNotifications: number };
-type NotificationItem = { id: number; title: string; message: string; senderName: string; createdAt: string };
 type LiveNotif = { title: string; message: string; senderName: string; ts: number };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -27,7 +26,6 @@ const STATUS_COLORS: Record<string, string> = {
 export default function DirectorOverview() {
     const nav = useNavigate();
     const [overview, setOverview] = useState<OverviewData | null>(null);
-    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [users, setUsers] = useState<(User & { id: number })[]>([]);
     const [userProgressMap, setUserProgressMap] = useState<Map<number, EvaluationRecord[]>>(new Map());
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -36,19 +34,18 @@ export default function DirectorOverview() {
     const [title, setTitle] = useState('');
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [liveNotifs, setLiveNotifs] = useState<LiveNotif[]>([]);
-    const sseRef = useRef<EventSource | null>(null);
+    // const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         if (!UserManager.isLoggedIn || !UserManager.isDirector) { nav('/'); return; }
         loadAll();
-        const stopPolling = startSSE();
-        const sse = sseRef.current;
-        return () => {
-            stopPolling();
-            sse?.close();
-        };
+        // const stopPolling = startSSE();
+        // const sse = sseRef.current;
+        // return () => {
+        //     stopPolling();
+        //     sse?.close();
+        // };
     }, [nav]);
 
     useEffect(() => {
@@ -81,26 +78,26 @@ export default function DirectorOverview() {
         }
     };
 
-    const startSSE = () => {
-        // Build SSE URL with auth token via query param isn't ideal; use a ping-based approach via the existing token
-        // We use fetch-based EventSource workaround since browser EventSource doesn't support custom headers
-        // Instead we poll notifications every 10s as a reliable fallback alongside SSE where supported
-        const interval = setInterval(async () => {
-            const items = await UserManager.getNotifications().catch(() => []);
-            setNotifications(items);
-        }, 10000);
-        return () => clearInterval(interval);
-    };
+    // const startSSE = () => {
+    //     // Build SSE URL with auth token via query param isn't ideal; use a ping-based approach via the existing token
+    //     // We use fetch-based EventSource workaround since browser EventSource doesn't support custom headers
+    //     // Instead we poll notifications every 10s as a reliable fallback alongside SSE where supported
+    //     const interval = setInterval(async () => {
+    //         const items = await UserManager.getNotifications().catch(() => []);
+    //         setNotifications(items);
+    //     }, 10000);
+    //     return () => clearInterval(interval);
+    // };
 
     const loadAll = async () => {
         try {
-            const [overviewData, notifData, allUsers] = await Promise.all([
+            const [overviewData, /*notifData,*/ allUsers] = await Promise.all([
                 UserManager.getOverview(),
-                UserManager.getNotifications(),
+                //UserManager.getNotifications(),
                 UserManager.getAllUsers(),
             ]);
             setOverview(overviewData);
-            setNotifications(notifData ?? []);
+            // setNotifications(notifData ?? []);
             setUsers((allUsers ?? []).filter((u): u is User & { id: number } => u.id !== undefined));
 
             // Load evaluations for all users in parallel
@@ -120,14 +117,14 @@ export default function DirectorOverview() {
         if (!title.trim() || !broadcastMsg.trim()) { setError('Title and message are required.'); return; }
         try {
             await UserManager.createNotification(title.trim(), broadcastMsg.trim());
-            setSuccess('Broadcast sent to all members.');
+            // setSuccess('Broadcast sent to all members.');
             setTitle(''); setBroadcastMsg(''); setError('');
-            const items = await UserManager.getNotifications();
-            setNotifications(items);
+            // const items = await UserManager.getNotifications();
+            // setNotifications(items);
             setLiveNotifs(prev => [{ title: title.trim(), message: broadcastMsg.trim(), senderName: 'You', ts: Date.now() }, ...prev]);
             if (overview) setOverview({ ...overview, totalNotifications: overview.totalNotifications + 1 });
         } catch {
-            setError('Failed to send broadcast.'); setSuccess('');
+            setError('Failed to send broadcast.'); // setSuccess('');
         }
     };
 
