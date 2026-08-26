@@ -61,11 +61,8 @@ export default function ProfileSettingsPage() {
         <>
             <main className="center-section">
                 <section className="auth-form-container">
-                    <div className="auth-header">
-                        <button className="back-button" onClick={() => nav('/')}>
-                            ← Back to Home
-                        </button>
-                        <h1>Profile Settings</h1>
+                    <div className="profile-header">
+                        <h1>Profile</h1>
                         <p>Update your account information</p>
                     </div>
                 <form onSubmit={handleSubmit} className="auth-form">

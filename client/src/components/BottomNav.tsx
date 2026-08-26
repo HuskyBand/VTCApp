@@ -31,7 +31,7 @@ export default function BottomNav() {
     }, []);
 
     const showQR = false; // UserManager.isLoggedIn && !canViewAdmin;
-    const showEvaluate = canViewAdmin || canEvaluateAnywhere;
+    const showEvaluate = false; // canViewAdmin || canEvaluateAnywhere;
     const showReference = hasAnyStationRole && !canViewAdmin;
 
     return (
@@ -86,13 +86,6 @@ export default function BottomNav() {
                 </svg>
                 <div>Reference</div>
             </Link>}
-            <Link to="/profile" className="nav-item">
-                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--accent)">
-                    <path d="M5 20V19C5 15.134 8.13401 12 12 12V12C15.866 12 19 15.134 19 19V20" stroke="var(--accent)" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round"></path>
-                    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="var(--accent)" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round"></path>
-                </svg>
-                <div>Profile</div>
-            </Link>
             {canViewAdmin && <Link to="/admin/overview" className="nav-item">
                 <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--accent)">
                     <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -100,6 +93,13 @@ export default function BottomNav() {
                 </svg>
                 <div>Director</div>
             </Link>}
+            <Link to="/profile" className="nav-item">
+                <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="var(--accent)">
+                    <path d="M5 20V19C5 15.134 8.13401 12 12 12V12C15.866 12 19 15.134 19 19V20" stroke="var(--accent)" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round"></path>
+                    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="var(--accent)" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round"></path>
+                </svg>
+                <div>Profile</div>
+            </Link>
         </nav>
     );
 }

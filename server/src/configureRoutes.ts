@@ -266,6 +266,25 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(users);
     });
 
+    routes.get('/users/:id/name', authMiddleware, async (c) => {
+        const userId = (c as any).userId as number;
+        const targetUserId = parseInt(c.req.param('id'));
+        const currentUser = await db.getUserById(userId);
+
+        if (!currentUser) {
+            return c.json({ error: 'Forbidden' }, 403);
+        }
+
+        const user = await db.getUserById(targetUserId);
+
+        if (!user) {
+            return c.json({ name: "Unknown User" });
+        }
+
+        return c.json({ name: `${user.firstName} ${user.lastName}` });
+    });
+
+
     routes.put('/users/:id/permissions', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const targetUserId = parseInt(c.req.param('id'));

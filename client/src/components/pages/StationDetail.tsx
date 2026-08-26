@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { NavLink, useParams } from "react-router";
 import BottomNav from "../BottomNav";
 import UserManager from "@client/stores/UserManager";
 import { useState, useEffect } from "react";
@@ -13,6 +13,7 @@ type StationCriterionState = {
 type StationEvaluation = {
     id?: number;
     stationId: number;
+    evaluator?: string;
     score?: number;
     comments?: string;
     criteria?: StationCriterionState[];
@@ -180,7 +181,7 @@ export default function StationDetail() {
 
     const getLatestScore = (): number => {
         if (evaluations.length === 0) return 0;
-        return evaluations[0].score ?? 0; // evaluations[0] is the latest, sorted by date descending
+        return Math.min((evaluations[0].score ?? 0) / 75, 1); // evaluations[0] is the latest, sorted by date descending
     };
 
     const getLatestStatus = (): EvaluationStatus => {
@@ -219,12 +220,66 @@ export default function StationDetail() {
                     <div className="queue-panel">
                         <div className="queue-actions">
                             {isInQueue() ? (
-                                <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
-                            ) : atMastery ? (
+                                <div className="queue-participant-actions">
+                                    <button className="button secondary" onClick={leaveQueue}>Leave Queue</button>
+                                    <NavLink className="button primary icon get-evaluated-button" to="/get-evaluated">
+                                        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M15 12L15 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 3V6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 12L18 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 18L21 18" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 21H21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 12H9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 6.01111L6.01 6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 12.0111L12.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M3 12.0111L3.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 9.01111L12.01 9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 15.0111L12.01 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M15 21.0111L15.01 21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 21.0111L12.01 21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 12.0111L21.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 15.0111L21.01 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 6.01111L18.01 6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M9 3.6V8.4C9 8.73137 8.73137 9 8.4 9H3.6C3.26863 9 3 8.73137 3 8.4V3.6C3 3.26863 3.26863 3 3.6 3H8.4C8.73137 3 9 3.26863 9 3.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 3.6V8.4C21 8.73137 20.7314 9 20.4 9H15.6C15.2686 9 15 8.73137 15 8.4V3.6C15 3.26863 15.2686 3 15.6 3H20.4C20.7314 3 21 3.26863 21 3.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 18.0111L6.01 18" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M9 15.6V20.4C9 20.7314 8.73137 21 8.4 21H3.6C3.26863 21 3 20.7314 3 20.4V15.6C3 15.2686 3.26863 15 3.6 15H8.4C8.73137 15 9 15.2686 9 15.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                        </svg>
+                                    </NavLink>
+                                </div>
+                            ) : (station.role === 'evaluator' ? (
+                                <NavLink className="button secondary" to={`/evaluate/station/${station.id}`}>Begin Evaluating</NavLink>
+                            ) : (atMastery ? (
                                 <p className="mastery-note">You've already reached mastery for this station.</p>
                             ) : (
-                                <button className="button primary" onClick={joinQueue}>Join Queue</button>
-                            )}
+                                <div className="queue-participant-actions">
+                                    <button className="button primary" onClick={joinQueue}>Get Evaluated</button>
+                                    <NavLink className="button primary icon get-evaluated-button" to="/get-evaluated">
+                                        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M15 12L15 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 3V6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 12L18 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 18L21 18" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 21H21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 12H9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 6.01111L6.01 6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 12.0111L12.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M3 12.0111L3.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 9.01111L12.01 9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 15.0111L12.01 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M15 21.0111L15.01 21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M12 21.0111L12.01 21" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 12.0111L21.01 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 15.0111L21.01 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M18 6.01111L18.01 6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M9 3.6V8.4C9 8.73137 8.73137 9 8.4 9H3.6C3.26863 9 3 8.73137 3 8.4V3.6C3 3.26863 3.26863 3 3.6 3H8.4C8.73137 3 9 3.26863 9 3.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M21 3.6V8.4C21 8.73137 20.7314 9 20.4 9H15.6C15.2686 9 15 8.73137 15 8.4V3.6C15 3.26863 15.2686 3 15.6 3H20.4C20.7314 3 21 3.26863 21 3.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M6 18.0111L6.01 18" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                            <path d="M9 15.6V20.4C9 20.7314 8.73137 21 8.4 21H3.6C3.26863 21 3 20.7314 3 20.4V15.6C3 15.2686 3.26863 15 3.6 15H8.4C8.73137 15 9 15.2686 9 15.6Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                        </svg>
+                                    </NavLink>
+                                </div>
+                            )))}
                         </div>
                         <div className="queue-status">
                             {isInQueue() && (

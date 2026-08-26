@@ -39,7 +39,7 @@
 
   --mastery-color: var(--spirit-gold);
   --proficient-color: var(--spirit-purple);
-  --notpassed-color: var(--border);
+  --notpassed-color: var(--text-sh);
 
   --dark-button-bg: #333;
   --dark-button-bg-selected: #111;
@@ -106,7 +106,7 @@ h1 {
   line-height: 100%;
   margin: 32px 0;
   @media (max-width: 700px) {
-    font-size: 70px;
+    font-size: 60px;
     margin: 25px 0;
   }
 }
@@ -209,6 +209,10 @@ code {
       outline-offset: 2px;
     }
   }
+
+  &.icon {
+    min-width: 1rem;
+  }
 }
 
 .content-direction-right {
@@ -310,6 +314,11 @@ code {
 
 .form-group {
   margin-bottom: 0;
+
+  &.fit {
+    max-width: 800px;
+    margin: 0 auto;
+  }
 }
 
 .form-group label {
@@ -332,8 +341,10 @@ code {
 .criteria-form-row {
   display: flex;
   align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 auto;
   padding: 15px 0;
-  border-bottom: 1px solid var(--border);
   gap: 15px;
 }
 
@@ -350,6 +361,62 @@ code {
   display: flex;
   gap: 10px;
 }
+
+.criteria-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex-basis: 3rem;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border);
+    cursor: pointer;
+    font-size: 0.9rem;
+    min-width: 2rem;
+    max-width: fit-content;
+    transition: all 0.15s;
+}
+.radio-label input[type="radio"] { display: none; }
+.radio-novice {
+  border-right-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  color: var(--light-button-text);
+  background: white;
+}
+.radio-developing {
+  border-left-width: 0;
+  border-right-width: 0;
+  border-radius: 0;
+  color: var(--light-button-text);
+  background: white;
+}
+.radio-proficient {
+  border-left-width: 0;
+  border-right-width: 0;
+  border-radius: 0;
+  color: var(--light-button-text);
+  background: white;
+}
+.radio-mastery {
+  border-left-width: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  color: var(--light-button-text);
+  background: white;
+}
+.radio-active.radio-novice { background: var(--notpassed-color); border-color: var(--notpassed-color); color: var(--dark-button-text); }
+.radio-active.radio-developing { background: var(--notpassed-color); border-color: var(--notpassed-color); color: var(--dark-button-text); }
+.radio-active.radio-proficient { background: var(--proficient-color); border-color: var(--proficient-color); color: var(--dark-button-text); }
+.radio-active.radio-mastery { background: var(--mastery-color); border-color: var(--mastery-color); color: var(--light-button-text); }
 
 .status-option {
   padding: 8px 12px;
@@ -617,6 +684,15 @@ code {
 .rubric ul {
   list-style: disc;
   margin-left: 20px;
+}
+
+.qr-scan-panel {
+  max-width: 400px;
+  margin: 20px auto;
+
+  h3 {
+    margin-bottom: 1rem;
+  }
 }
 
 .qr-placeholder {
@@ -900,8 +976,88 @@ code {
 .queue-panel {
   max-width: 400px;
   margin: 20px auto;
+
+  h3 {
+    margin-bottom: 1rem;
+  }
 }
 
 .queue-actions {
   margin-bottom: -20px;
+}
+
+.evaluation-headertext {
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.evaluation-subheadertext {
+  margin-bottom: 2rem;
+}
+
+.scanner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.scanner-video {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 10px;
+}
+.scanned-student {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.get-evaluated-button {
+  box-sizing: content-box;
+  margin-left: 0.5rem;
+  vertical-align: center;
+  padding: 8px 8px;
+
+  svg {
+    stroke: var(--light-button-text);
+  }
+
+  &:hover {
+    svg {
+      stroke: var(--dark-button-text);
+    }
+  }
+}
+
+#user-select {
+  max-width: 500px;
+}
+
+.feedback-checkbox {
+  appearance: none;
+}
+
+.feedback-checkbox[type="checkbox"] {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #808080;
+  border-radius: 0.2rem;
+  background: #FFF;
+  cursor: pointer;
+}
+
+.feedback-checkbox[type="checkbox"]:after {
+  position: relative;
+  display: block;
+}
+
+.feedback-checkbox[type="checkbox"]:checked {
+  border: 1px solid var(--accent);
+  background: var(--accent);
 }

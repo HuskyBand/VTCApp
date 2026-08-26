@@ -27,6 +27,8 @@ type EvaluationCriterion = {
 type UserEvaluation = {
     id?: number;
     stationId: number;
+    evaluatorId: number;
+    evaluator?: string;
     score?: number;
     comments?: string;
     criteria?: EvaluationCriterion[];
@@ -207,6 +209,16 @@ class UserManager {
         return response.body;
     }
 
+    async getNameForId(id: number): Promise<string> {
+        const response = await http.get<{ name: string }>(Endpoints.users.name(id));
+
+        if (!response.ok || !response.body) {
+            return "Unknown User";
+        }
+
+        return response.body.name;
+    }
+
     async getNotifications(): Promise<Array<{ id: number; title: string; message: string; senderName: string; createdAt: string; category: 'general' | 'queue' | 'broadcast' }>> {
         const response = await http.get(Endpoints.notifications.list);
         if (!response.ok || !response.body) {
@@ -299,7 +311,13 @@ class UserManager {
         if (!response.ok || !response.body) {
             return [];
         }
-        return response.body as UserEvaluation[];
+
+        let r = response.body as UserEvaluation[];
+        for (let i = 0; i < r.length; ++i) {
+            r[i].evaluator = await this.getNameForId(r[i].evaluatorId);
+        }
+
+        return r;
     }
 
     async updateUserPermissions(userId: number, permFlags: number): Promise<boolean> {

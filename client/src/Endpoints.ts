@@ -11,6 +11,7 @@ export const Endpoints = {
 
     users: {
         list: '/users',
+        name: (userId: number) => `/users/${userId}/name`,
         permissions: (userId: number) => `/users/${userId}/permissions`,
         stationRole: (userId: number, stationId: number) => `/users/${userId}/stations/${stationId}/role`,
         stationRoles: (userId: number) => `/users/${userId}/stations/roles`
