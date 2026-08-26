@@ -5,10 +5,8 @@ import UserManager from "@client/stores/UserManager";
 import type { User } from "@api/user/User";
 import type { StationRole } from "@api/station/StationRole";
 import {
-    getLatestStationEvaluation,
     getStatusLabel,
     isMasteryLocked,
-    scoreToStatus,
     type EvaluationRecord,
 } from "@client/utils/evaluationHelpers";
 import jsQR from "jsqr";
@@ -58,7 +56,6 @@ export default function EvaluationForm() {
 
     useEffect(() => {
         loadUsers();
-        loadMyEvaluations();
         loadStationCriteria();
     }, [stationId]);
 
@@ -192,12 +189,6 @@ export default function EvaluationForm() {
         if (!scannedUser) return;
         const found = allUsers.find((u) => u.id === scannedUser.id);
         if (found) setSelectedUser(found);
-    };
-
-    const loadMyEvaluations = async () => {
-        if (!UserManager.isLoggedIn) return;
-        const evaluations = await UserManager.getEvaluationsForUser(UserManager.currentUser.id!);
-        setMyEvaluations(evaluations);
     };
 
     const handleUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
