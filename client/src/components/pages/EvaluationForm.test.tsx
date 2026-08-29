@@ -76,10 +76,10 @@ describe('EvaluationForm', () => {
             expect(mockedUserManager.getStation).toHaveBeenCalled();
         });
 
-        const selectOpt = await screen.findByText('Manually select a student');
+        const selectOpt = await screen.findByText('-- Manually select a student --');
         const select = selectOpt.parentElement;
         expect(select).toBeTruthy();
-        
+
         fireEvent.change(select!, { target: { value: '1' } });
 
         const submitButton = await screen.findByRole('button', { name: 'Submit Evaluation' });
