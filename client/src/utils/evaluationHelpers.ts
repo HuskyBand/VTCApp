@@ -58,7 +58,7 @@ const statusLabels: Record<EvaluationStatus, string> = {
     not_started: 'Not Started',
     novice: 'Novice',
     developing: 'Developing',
-    proficient: 'Satisfactory',
+    proficient: 'Proficient',
     mastery: 'Mastered',
 };
 
