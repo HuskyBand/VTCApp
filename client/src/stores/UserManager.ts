@@ -16,7 +16,8 @@ type StationRecord = {
     criteria: string[];
     feedbackItems: string[];
     role: StationRole;
-    instructorNotes?: string[];
+    teachInstructions?: string;
+    testInstructions?: string;
 };
 
 type EvaluationCriterion = {
@@ -35,7 +36,7 @@ type UserEvaluation = {
     createdAt?: string;
 };
 
-type StationUpdatePayload = Partial<Pick<StationRecord, 'name' | 'criteria' | 'feedbackItems' | 'instructorNotes'>>;
+type StationUpdatePayload = Partial<Pick<StationRecord, 'name' | 'criteria' | 'feedbackItems' | 'teachInstructions' | 'testInstructions'>>;
 
 type AdminOverviewStation = {
     stationId: number;
@@ -229,14 +230,14 @@ class UserManager {
 
     async getNameForId(id: number): Promise<string> {
         // Since we call this a LOT, we need to cache the result so we're not spamming web requests.
-        let cached = this._userNameCache.get(id);
+        const cached = this._userNameCache.get(id);
         if (cached) {
             return cached;
         }
 
         const response = await http.get<{ name: string }>(Endpoints.users.name(id));
 
-        let name = (response.ok && response.body) ? response.body.name : "Unknown User";
+        const name = (response.ok && response.body) ? response.body.name : "Unknown User";
         this._userNameCache.set(id, name);
 
         return name;
@@ -335,7 +336,7 @@ class UserManager {
             return [];
         }
 
-        let r = response.body as UserEvaluation[];
+        const r = response.body as UserEvaluation[];
         for (let i = 0; i < r.length; ++i) {
             r[i].evaluator = await this.getNameForId(r[i].evaluatorId);
         }
@@ -358,9 +359,9 @@ class UserManager {
         const response = await http.get(Endpoints.users.stationRoles(userId));
         if (!response.ok || !response.body) return [];
 
-        let roles = response.body as Array<{ stationId: number; stationName: string; role: StationRole }>;
+        const roles = response.body as Array<{ stationId: number; stationName: string; role: StationRole }>;
 
-        let has = roles.findIndex((s) => {
+        const has = roles.findIndex((s) => {
             if (s.role !== 'participant') {
                 this.saveToStorage();
                 return true;
@@ -389,17 +390,18 @@ class UserManager {
         }));
     }
 
-    async createStation(name: string, criteria: string[], feedbackItems?: string[], instructorNotes?: string[]): Promise<boolean> {
-        const response = await http.post('/stations', { name, criteria, feedbackItems: feedbackItems ?? [], instructorNotes: instructorNotes ?? [] });
+    async createStation(name: string, criteria: string[], feedbackItems?: string[], teachingMarkdown?: string, testMarkdown?: string): Promise<boolean> {
+        const response = await http.post('/stations', { name, criteria, feedbackItems: feedbackItems ?? [], teachInstructions: teachingMarkdown ?? '', testInstructions: testMarkdown ?? '' });
         return response.ok;
     }
 
-    async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[], instructorNotes?: string[]): Promise<boolean> {
+    async updateStation(id: number, name?: string, criteria?: string[], feedbackItems?: string[], teachingMarkdown?: string, testMarkdown?: string): Promise<boolean> {
         const updates: StationUpdatePayload = {};
         if (name !== undefined) updates.name = name;
         if (criteria !== undefined) updates.criteria = criteria;
         if (feedbackItems !== undefined) updates.feedbackItems = feedbackItems;
-        if (instructorNotes !== undefined) updates.instructorNotes = instructorNotes;
+        if (teachingMarkdown !== undefined) updates.teachInstructions = teachingMarkdown;
+        if (testMarkdown !== undefined) updates.testInstructions = testMarkdown;
         const response = await http.put(`/stations/${id}`, updates);
         return response.ok;
     }

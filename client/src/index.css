@@ -1072,3 +1072,30 @@ code {
   border: 1px solid var(--accent);
   background: var(--accent);
 }
+
+.markdown-text-entry {
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 21px;
+  }
+  h3 {
+    font-size: 18px;
+  }
+  h4 {
+    font-size: 18px;
+  }
+
+  text-align: left;
+
+  ul {
+    list-style-position: outside;
+    padding-left: 0;
+  }
+
+  ol {
+    list-style-position: inside;
+    padding-left: 0;
+  }
+}

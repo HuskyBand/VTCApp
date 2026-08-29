@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import BottomNav from '../BottomNav';
 import UserManager from '@client/stores/UserManager';
+import Markdown from 'react-markdown';
 
 type StationInfo = {
     id: number;
@@ -9,8 +10,8 @@ type StationInfo = {
     criteria: string[];
     feedbackItems: string[];
     role?: string;
-    instructorNotes?: string[];
-    testInstructions?: string[];
+    teachInstructions?: string;
+    testInstructions?: string;
 };
 
 export default function StationFeedbackView() {
@@ -61,24 +62,26 @@ export default function StationFeedbackView() {
                                 </button>
                                 {expandedId === station.id && (
                                     <div className="sfv-body">
-                                        {station.instructorNotes && <div className="sfv-col">
-                                            <h4>Teaching Points</h4>
-                                            {station.instructorNotes.length > 0
-                                                ? <ul>{station.instructorNotes.map((c, i) => <li key={i}>{c}</li>)}</ul>
-                                                : <p className="sfv-empty">No teaching points defined.</p>}
-                                        </div>}
-                                        {station.testInstructions && <div className="sfv-col">
-                                            <h4>Test Instructions</h4>
-                                            {station.testInstructions.length > 0
-                                                ? <ul>{station.criteria.map((c, i) => <li key={i}>{c}</li>)}</ul>
-                                                : <p className="sfv-empty">No test instructions defined.</p>}
-                                        </div>}
-                                        <div className="sfv-col">
+                                        {station.role !== 'evaluator' && <div className="sfv-col">
                                             <h4>Common Feedback Areas</h4>
                                             {station.feedbackItems.length > 0
                                                 ? <ul>{station.feedbackItems.map((f, i) => <li key={i}>{f}</li>)}</ul>
                                                 : <p className="sfv-empty">No feedback items defined.</p>}
-                                        </div>
+                                        </div>}
+                                        {station.teachInstructions && station.teachInstructions.length > 0 ?
+                                        <div className="sfv-col">
+                                            <h4>Teaching Instructions</h4>
+                                            {<div className="markdown-text-entry"><Markdown>{station.teachInstructions}</Markdown></div>}
+                                        </div> : <div className="sfv-col">
+                                            <p>Not defined</p>
+                                        </div>}
+                                        {station.role === 'evaluator' && (station.testInstructions && station.testInstructions.length > 0 ?
+                                        <div className="sfv-col">
+                                            <h4>Evaluation Instructions</h4>
+                                            {<div className="markdown-text-entry"><Markdown>{station.testInstructions}</Markdown></div>}
+                                        </div> : <div className="sfv-col">
+                                            <p>Not defined</p>
+                                        </div>)}
                                     </div>
                                 )}
                             </div>
