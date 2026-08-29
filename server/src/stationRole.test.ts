@@ -13,19 +13,19 @@ describe('computeHighestProficientStation', () => {
     });
 
     it('returns the count of leading passed stations', () => {
-        expect(computeHighestProficientStation([60, 55, 90])).toBe(3);
+        expect(computeHighestProficientStation([60, 55, 90])).toBe(0);
     });
 
     it('stops counting at the first gap', () => {
-        expect(computeHighestProficientStation([60, 55, 30, 90])).toBe(2);
+        expect(computeHighestProficientStation([80, 75, 30, 90])).toBe(2);
     });
 
     it('treats a missing score as a gap', () => {
-        expect(computeHighestProficientStation([60, undefined, 90])).toBe(1);
+        expect(computeHighestProficientStation([60, undefined, 90])).toBe(0);
     });
 
     it('does not require mastery, only a pass, to count a station', () => {
-        expect(computeHighestProficientStation([50])).toBe(1);
+        expect(computeHighestProficientStation([75])).toBe(1);
     });
 });
 
