@@ -10,8 +10,8 @@ export type Station = {
     name: string;
     criteria: string[];
     feedbackItems: string[];
-    instructorNotes: string[];
-    testInstructions: string[];
+    teachInstructions: string; // Markdown string
+    testInstructions: string; // Markdown string
     createdAt?: string;
 };
 
@@ -100,8 +100,8 @@ export class Database {
                     name TEXT NOT NULL,
                     criteria TEXT NOT NULL, -- JSON array of criteria
                     feedbackItems TEXT NOT NULL DEFAULT '[]',
-                    instructorNotes TEXT NOT NULL DEFAULT '[]',
-                    testInstructions TEXT NOT NULL DEFAULT '[]',
+                    teachInstructions TEXT NOT NULL,
+                    testInstructions TEXT NOT NULL,
                     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
@@ -177,8 +177,8 @@ export class Database {
                 if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'feedbackItems')) {
                     this.db.run("ALTER TABLE stations ADD COLUMN feedbackItems TEXT NOT NULL DEFAULT '[]'");
                 }
-                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'instructorNotes')) {
-                    this.db.run("ALTER TABLE stations ADD COLUMN instructorNotes TEXT NOT NULL DEFAULT '[]'");
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'teachInstructions')) {
+                    this.db.run("ALTER TABLE stations ADD COLUMN teachInstructions TEXT NOT NULL");
                 }
             });
         });
@@ -657,12 +657,12 @@ export class Database {
     }
 
     // Station methods
-    createStation(station: { name: string; criteria: string[]; feedbackItems?: string[]; instructorNotes?: string[] }): Promise<{ id: number }> {
+    createStation(station: { name: string; criteria: string[]; feedbackItems?: string[]; teachInstructions?: string, testInstructions?: string }): Promise<{ id: number }> {
         return new Promise((resolve, reject) => {
-            const sql = `INSERT INTO stations (name, criteria, feedbackItems, instructorNotes) VALUES (?, ?, ?, ?)`;
+            const sql = `INSERT INTO stations (name, criteria, feedbackItems, teachInstructions, testInstructions) VALUES (?, ?, ?, ?, ?)`;
             this.db.run(
                 sql,
-                [station.name, JSON.stringify(station.criteria), JSON.stringify(station.feedbackItems ?? []), JSON.stringify(station.instructorNotes ?? [])],
+                [station.name, JSON.stringify(station.criteria), JSON.stringify(station.feedbackItems ?? []), station.teachInstructions ?? '', station.testInstructions ?? ''],
                 function(err) {
                     if (err) {
                         reject(err);
@@ -678,7 +678,7 @@ export class Database {
     getAllStations(): Promise<Station[]> {
         return new Promise((resolve, reject) => {
             this.db.all(
-                'SELECT id, name, criteria, feedbackItems, instructorNotes, createdAt FROM stations ORDER BY id ASC',
+                'SELECT id, name, criteria, feedbackItems, teachInstructions, testInstructions, createdAt FROM stations ORDER BY id ASC',
                 [],
                 (err, rows) => {
                     if (err) { reject(err); return; }
@@ -686,7 +686,8 @@ export class Database {
                         ...row,
                         criteria: JSON.parse(row.criteria),
                         feedbackItems: row.feedbackItems ? JSON.parse(row.feedbackItems) : [],
-                        instructorNotes: row.instructorNotes ? JSON.parse(row.instructorNotes) : []
+                        teachInstructions: row.teachInstructions ?? '',
+                        testInstructions: row.testInstructions ?? ''
                     }));
                     resolve(stations);
                 }
@@ -697,7 +698,7 @@ export class Database {
     getStationById(id: number): Promise<Station | null> {
         return new Promise((resolve, reject) => {
             this.db.get(
-                'SELECT id, name, criteria, feedbackItems, instructorNotes, createdAt FROM stations WHERE id = ?',
+                'SELECT id, name, criteria, feedbackItems, teachInstructions, testInstructions, createdAt FROM stations WHERE id = ?',
                 [id],
                 (err, row) => {
                     if (err) { reject(err); return; }
@@ -706,14 +707,15 @@ export class Database {
                         ...row as Station,
                         criteria: JSON.parse((row as any).criteria),
                         feedbackItems: (row as any).feedbackItems ? JSON.parse((row as any).feedbackItems) : [],
-                        instructorNotes: (row as any).instructorNotes ? JSON.parse((row as any).instructorNotes) : []
+                        teachInstructions: (row as any).teachInstructions ?? '',
+                        testInstructions: (row as any).testInstructions ?? ''
                     });
                 }
             );
         });
     }
 
-    updateStation(id: number, updates: { name?: string; criteria?: string[]; feedbackItems?: string[]; instructorNotes?: string[] }): Promise<void> {
+    updateStation(id: number, updates: { name?: string; criteria?: string[]; feedbackItems?: string[]; teachInstructions?: string, testInstructions?: string }): Promise<void> {
         return new Promise((resolve, reject) => {
             const fields = [];
             const values = [];
@@ -733,9 +735,14 @@ export class Database {
                 values.push(JSON.stringify(updates.feedbackItems));
             }
 
-            if (updates.instructorNotes !== undefined) {
-                fields.push('instructorNotes = ?');
-                values.push(JSON.stringify(updates.instructorNotes));
+            if (updates.teachInstructions !== undefined) {
+                fields.push('teachInstructions = ?');
+                values.push(updates.teachInstructions);
+            }
+
+            if (updates.testInstructions !== undefined) {
+                fields.push('testInstructions = ?');
+                values.push(updates.testInstructions);
             }
 
             if (fields.length === 0) {

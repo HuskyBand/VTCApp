@@ -512,7 +512,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         return c.json(evaluations);
     });
 
-    // Public (any authenticated user) station lookup — role/instructorNotes are per-caller
+    // Public (any authenticated user) station lookup — role/teachInstructions/testInstructions are per-caller
     routes.get('/stations/:id', authMiddleware, async (c) => {
         const userId = (c as any).userId as number;
         const stationId = parseInt(c.req.param('id'));
@@ -522,7 +522,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
 
         const station = await db.getStationById(stationId);
-        const base = station ?? { id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [], instructorNotes: [] };
+        const base = station ?? { id: stationId, name: `Station ${stationId}`, criteria: [], feedbackItems: [], teachInstructions: '', testInstructions: '' };
         const role = await resolveStationRole(db, currentUser, stationId);
 
         return c.json({
@@ -531,7 +531,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
             criteria: base.criteria,
             feedbackItems: base.feedbackItems,
             role,
-            ...(role !== 'participant' ? { instructorNotes: base.instructorNotes } : {})
+            ...(role !== 'participant' ? { teachInstructions: base.teachInstructions } : {}),
+            ...(role === 'evaluator' ? { testInstructions: base.testInstructions } : {})
         });
     });
 
@@ -551,7 +552,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
                 criteria: station.criteria,
                 feedbackItems: station.feedbackItems,
                 role,
-                ...(role !== 'participant' ? { instructorNotes: station.instructorNotes } : {})
+                ...(role !== 'participant' ? { teachInstructions: station.teachInstructions } : {}),
+                ...(role === 'evaluator' ? { testInstructions: station.testInstructions } : {})
             };
         }));
         return c.json(withRoles);
