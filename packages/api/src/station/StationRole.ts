@@ -1,6 +1,7 @@
 export type StationRole = 'participant' | 'teacher' | 'evaluator';
 
-const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
+// Score of 75 = proficient
+const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 75;
 
 /**
  * Highest station number (1-indexed) passed proficiently with no gap before it,

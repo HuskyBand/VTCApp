@@ -47,6 +47,8 @@ export default function StationFeedbackView() {
                 <div>
                     <h1>Station Reference</h1>
                     <p>Evaluation criteria and common feedback areas for each station — for teaching reference.</p>
+                    {stations && stations.findIndex((s) => s.role === 'evaluator') >= 0 &&
+                        <a href="/rubric.pdf" target="_blank">See full rubric for evaluation criteria</a>}
                     {error && <div className="message error-message">{error}</div>}
                     {stations ? (stations.length === 0 && !error && <p>No stations configured yet.</p>) :
                     (<p>Loading...</p>)}
@@ -68,20 +70,20 @@ export default function StationFeedbackView() {
                                                 ? <ul>{station.feedbackItems.map((f, i) => <li key={i}>{f}</li>)}</ul>
                                                 : <p className="sfv-empty">No feedback items defined.</p>}
                                         </div>}
-                                        {station.teachInstructions && station.teachInstructions.length > 0 ?
+                                        {station.role !== 'participant' ? (station.teachInstructions && station.teachInstructions.length > 0 &&
                                         <div className="sfv-col">
                                             <h4>Teaching Instructions</h4>
                                             {<div className="markdown-text-entry"><Markdown>{station.teachInstructions}</Markdown></div>}
-                                        </div> : <div className="sfv-col">
-                                            <p>Not defined</p>
+                                        </div>) : <div className="sfv-col">
+                                            <p>Become a teacher to view teaching instructions.</p>
                                         </div>}
-                                        {station.role === 'evaluator' && (station.testInstructions && station.testInstructions.length > 0 ?
+                                        {station.role === 'evaluator' ? (station.testInstructions && station.testInstructions.length > 0 &&
                                         <div className="sfv-col">
                                             <h4>Evaluation Instructions</h4>
                                             {<div className="markdown-text-entry"><Markdown>{station.testInstructions}</Markdown></div>}
-                                        </div> : <div className="sfv-col">
-                                            <p>Not defined</p>
-                                        </div>)}
+                                        </div>) : <div className="sfv-col">
+                                            <p>Become an evaluator to view evaluation instructions.</p>
+                                        </div>}
                                     </div>
                                 )}
                             </div>

@@ -363,7 +363,6 @@ class UserManager {
 
         const has = roles.findIndex((s) => {
             if (s.role !== 'participant') {
-                this.saveToStorage();
                 return true;
             }
 

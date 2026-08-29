@@ -122,7 +122,7 @@ export default function RegisterPage() {
                             onChange={handleSelectChange}
                             required
                             className="text-input"> 
-                            <option value="nil">-- Select an instrument --</option>
+                            <option value="N/A">-- Select an instrument --</option>
                             <optgroup label="Winds">
                                 <option value="Piccolo">Piccolo</option>
                                 <option value="Clarinet">Clarinet</option>
