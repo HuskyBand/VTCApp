@@ -215,9 +215,32 @@ export class Database {
         return result;
     }
 
+    private checkCodeNums(arr: Uint8Array): boolean {
+        for (let i = 1; i < arr.length; ++i) {
+            const x = arr[i];
+            
+            for (let j = 0; j < i; ++j) {
+                if (x === arr[j]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private generateCodeStrings(count: number): string[] {
         var codeNums = new Uint8Array(count);
-        crypto.getRandomValues(codeNums);
+
+        // Prevent random values from reoccuring.
+        let infCount = 0;
+        do {
+            crypto.getRandomValues(codeNums);
+        } while (++infCount < 100 && this.checkCodeNums(codeNums));
+
+        if (infCount === 100) {
+            throw "Cycled too many times generating code strings.";
+        }
 
         var strings: string[] = [];
 
