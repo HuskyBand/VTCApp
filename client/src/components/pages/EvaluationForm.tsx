@@ -485,6 +485,7 @@ export default function EvaluationForm() {
                             )}
 
                             <button
+                                role="button"
                                 className="button primary submit-btn"
                                 onClick={handleSubmit}
                                 disabled={isSubmitting || !selectedUser || targetAtMastery || !currentEligibility || criteria.length === 0}

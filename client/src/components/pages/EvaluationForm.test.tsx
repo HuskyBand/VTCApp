@@ -75,7 +75,7 @@ describe('EvaluationForm', () => {
             expect(mockedUserManager.getStation).toHaveBeenCalled();
         });
 
-        const select = await screen.findByLabelText('Manually select a student');
+        const select = await screen.findByTestId('Manually select a student');
         fireEvent.change(select, { target: { value: '1' } });
 
         const submitButton = await screen.findByRole('button', { name: 'Submit Evaluation' });
