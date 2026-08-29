@@ -1,7 +1,7 @@
 import type { Database } from './database';
 import type { User } from '@api/user/User';
 import { PermFlags } from '@api/user/User';
-import { computeStationRoleFromScores, type StationRole } from '@api/station/StationRole';
+import { computeHighestProficientStation, computeStationRoleForStation, type StationRole } from '@api/station/StationRole';
 
 export type { StationRole };
 
@@ -27,9 +27,11 @@ export async function resolveStationRole(
         return override;
     }
 
-    const currentStation = await db.getLatestEvaluationForUserStation(user.id, stationId);
-    const isLastStation = stationId >= LAST_STATION_ID;
-    const nextStation = isLastStation ? null : await db.getLatestEvaluationForUserStation(user.id, stationId + 1);
+    const stationIds = Array.from({ length: LAST_STATION_ID }, (_, i) => i + 1);
+    const scores = await Promise.all(
+        stationIds.map(async (id) => (await db.getLatestEvaluationForUserStation(user.id, id))?.score)
+    );
+    const highestProficientStation = computeHighestProficientStation(scores);
 
-    return computeStationRoleFromScores(currentStation?.score, nextStation?.score, isLastStation);
+    return computeStationRoleForStation(highestProficientStation, stationId, LAST_STATION_ID);
 }

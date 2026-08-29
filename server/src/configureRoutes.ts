@@ -133,7 +133,7 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
 
         const role = await resolveStationRole(db, currentUser, stationId);
-        return role === 'evaluator';
+        return role === 'evaluator' || role === 'teacher';
     };
 
     const notifyFirstInQueue = async (stationId: number, senderId: number, senderName: string) => {
@@ -326,8 +326,8 @@ export default function configureRoutes(routes: Hono, db: Database) {
         }
 
         const { role } = await c.req.json() as { role: string };
-        if (role !== 'participant' && role !== 'instructor' && role !== 'evaluator') {
-            return c.json({ error: 'role must be participant, instructor, or evaluator' }, 400);
+        if (role !== 'participant' && role !== 'teacher' && role !== 'evaluator') {
+            return c.json({ error: 'role must be participant, teacher, or evaluator' }, 400);
         }
 
         if (role === 'participant') {

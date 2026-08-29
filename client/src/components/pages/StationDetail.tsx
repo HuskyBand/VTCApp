@@ -363,7 +363,7 @@ export default function StationDetail() {
 
                     {/*station.role !== 'participant' && station.instructorNotes && station.instructorNotes.length > 0 && (
                         <div className="instructor-notes-summary">
-                            <h3>Instructor Notes</h3>
+                            <h3>Teacher Notes</h3>
                             <ul>
                                 {station.instructorNotes.map((note) => (
                                     <li key={note}>{note}</li>

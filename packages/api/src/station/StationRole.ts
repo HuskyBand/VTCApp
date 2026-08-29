@@ -1,24 +1,45 @@
-export type StationRole = 'participant' | 'instructor' | 'evaluator';
+export type StationRole = 'participant' | 'teacher' | 'evaluator';
+
+const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
 
 /**
- * Pure score-to-role math, factored out of the old canSubmitEvaluation so it's
- * testable without a database. `evaluator` needs mastery (>=80) here and a pass
- * (>=50) at the next station; `instructor` needs a pass (>=50) here and a pass
- * at the next station; anything else is `participant`.
+ * Highest station number (1-indexed) passed proficiently with no gap before it,
+ * assuming sequential progression through the circuit. `scoresByStation[i]` is
+ * the score at station `i + 1`.
  */
-export function computeStationRoleFromScores(
-    currentScore: number | null | undefined,
-    nextScore: number | null | undefined,
-    isLastStation: boolean
+export function computeHighestProficientStation(
+    scoresByStation: Array<number | null | undefined>
+): number {
+    let highest = 0;
+    for (const score of scoresByStation) {
+        if (!hasPassed(score)) break;
+        highest += 1;
+    }
+    return highest;
+}
+
+/**
+ * Someone who has proficiently passed stations 1..n teaches at stations 1..(n-1)
+ * and evaluates at stations 1..(n-2). Since n can never exceed lastStationId
+ * through normal progression, the top of the range (stations lastStationId-1
+ * and lastStationId) would otherwise never get teachers/evaluators — passing
+ * the final station fills that gap. Evaluator takes precedence over teacher
+ * when both apply to the same station.
+ */
+export function computeStationRoleForStation(
+    highestProficientStation: number,
+    stationId: number,
+    lastStationId: number
 ): StationRole {
-    const isMastery = (score?: number | null) => score !== undefined && score !== null && score >= 80;
-    const hasPassed = (score?: number | null) => score !== undefined && score !== null && score >= 50;
+    const passedEverything = highestProficientStation === lastStationId;
 
-    const currentMastery = isMastery(currentScore);
-    const currentPassed = hasPassed(currentScore);
-    const nextPassed = isLastStation || hasPassed(nextScore);
+    const isEvaluator = stationId <= highestProficientStation - 2
+        || (passedEverything && (stationId === lastStationId - 1 || stationId === lastStationId));
+    if (isEvaluator) return 'evaluator';
 
-    if (currentMastery && nextPassed) return 'evaluator';
-    if ((currentPassed || currentMastery) && nextPassed) return 'instructor';
+    const isTeacher = stationId <= highestProficientStation - 1
+        || (passedEverything && stationId === lastStationId);
+    if (isTeacher) return 'teacher';
+
     return 'participant';
 }

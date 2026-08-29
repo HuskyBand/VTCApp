@@ -285,7 +285,7 @@ export default function DirectorOverview() {
                                     <div key={entry.stationId} className="role-override-row">
                                         <span className="role-override-station">{entry.stationName}</span>
                                         <div className="role-override-options">
-                                            {(['participant', 'instructor', 'evaluator'] as StationRole[]).map((role) => (
+                                            {(['participant', 'teacher', 'evaluator'] as StationRole[]).map((role) => (
                                                 <label key={role} className="role-override-option">
                                                     <input
                                                         type="radio"
