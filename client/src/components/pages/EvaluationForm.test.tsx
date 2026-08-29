@@ -89,6 +89,6 @@ describe('EvaluationForm', () => {
             expect(mockedUserManager.submitEvaluation).toHaveBeenCalled();
         });
 
-        expect(navMock).toHaveBeenCalledWith('/evaluate?stationId=1');
+        expect(navMock).toHaveBeenCalledWith('/station/1');
     });
 });
