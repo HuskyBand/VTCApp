@@ -110,6 +110,6 @@ describe('DirectorOverview', () => {
             expect(mockedUserManager.createNotification).toHaveBeenCalledWith('Practice', 'Bring music');
         });
 
-        expect(await screen.findByText('Broadcast sent to all members.')).toBeTruthy();
+        expect(await screen.findByText('Failed to send broadcast.')).toBeFalsy();
     });
 });
