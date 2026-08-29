@@ -138,7 +138,7 @@ export class Database {
                 CREATE TABLE IF NOT EXISTS station_role_overrides (
                     userId INTEGER NOT NULL,
                     stationId INTEGER NOT NULL,
-                    role TEXT NOT NULL CHECK(role IN ('instructor', 'evaluator')),
+                    role TEXT NOT NULL CHECK(role IN ('teacher', 'evaluator')),
                     PRIMARY KEY (userId, stationId),
                     FOREIGN KEY (userId) REFERENCES users(id)
                 )
@@ -157,6 +157,33 @@ export class Database {
                     console.error(`Create registration_codes: ${err.message}`);
                 }
             });
+            
+            // Pre-existing installs created this table with a CHECK allowing 'instructor'
+            // instead of 'teacher'. SQLite can't ALTER a CHECK constraint, so rebuild the
+            // table under the new constraint and carry the renamed rows over.
+            this.db.get(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'station_role_overrides'",
+                [],
+                (err, row: { sql: string } | undefined) => {
+                    if (err || !row || !row.sql.includes("'instructor'")) return;
+                    this.db.run('ALTER TABLE station_role_overrides RENAME TO station_role_overrides_old');
+                    this.db.run(`
+                        CREATE TABLE station_role_overrides (
+                            userId INTEGER NOT NULL,
+                            stationId INTEGER NOT NULL,
+                            role TEXT NOT NULL CHECK(role IN ('teacher', 'evaluator')),
+                            PRIMARY KEY (userId, stationId),
+                            FOREIGN KEY (userId) REFERENCES users(id)
+                        )
+                    `);
+                    this.db.run(`
+                        INSERT INTO station_role_overrides (userId, stationId, role)
+                        SELECT userId, stationId, CASE role WHEN 'instructor' THEN 'teacher' ELSE role END
+                        FROM station_role_overrides_old
+                    `);
+                    this.db.run('DROP TABLE station_role_overrides_old');
+                }
+            );
 
             this.db.all('PRAGMA table_info(evaluations)', [], (err, rows: any[]) => {
                 if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'criteria')) {
@@ -790,20 +817,20 @@ export class Database {
         });
     }
 
-    getStationRoleOverride(userId: number, stationId: number): Promise<'instructor' | 'evaluator' | null> {
+    getStationRoleOverride(userId: number, stationId: number): Promise<'teacher' | 'evaluator' | null> {
         return new Promise((resolve, reject) => {
             this.db.get(
                 'SELECT role FROM station_role_overrides WHERE userId = ? AND stationId = ?',
                 [userId, stationId],
                 (err, row) => {
                     if (err) { reject(err); return; }
-                    resolve(row ? (row as { role: 'instructor' | 'evaluator' }).role : null);
+                    resolve(row ? (row as { role: 'teacher' | 'evaluator' }).role : null);
                 }
             );
         });
     }
 
-    setStationRoleOverride(userId: number, stationId: number, role: 'instructor' | 'evaluator'): Promise<void> {
+    setStationRoleOverride(userId: number, stationId: number, role: 'teacher' | 'evaluator'): Promise<void> {
         return new Promise((resolve, reject) => {
             this.db.run(
                 `INSERT INTO station_role_overrides (userId, stationId, role) VALUES (?, ?, ?)

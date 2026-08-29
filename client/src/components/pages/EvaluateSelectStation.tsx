@@ -53,7 +53,7 @@ export default function EvaluateSelectStation() {
         const redirectStationId = Number(searchParams.get('stationId'));
         if (!redirectStationId) return;
         const target = stations.find((s) => s.id === redirectStationId);
-        if (target && target.role === 'evaluator') {
+        if (target && (target.role === 'evaluator' || target.role === 'teacher')) {
             setSelectedStation(redirectStationId);
         }
     }, [stations, searchParams]);
@@ -152,8 +152,8 @@ export default function EvaluateSelectStation() {
     const handleSelect = () => {
         if (!selectedStation) return;
         const target = stations.find((s) => s.id === selectedStation);
-        if (!target || target.role !== 'evaluator') {
-            setError('You are not yet eligible to evaluate this station. Reach mastery and pass the next station first.');
+        if (!target || (target.role !== 'evaluator' && target.role !== 'teacher')) {
+            setError('You are not yet eligible to evaluate this station.');
             return;
         }
         nav(`/evaluate/station/${selectedStation}`);
@@ -178,8 +178,8 @@ export default function EvaluateSelectStation() {
     const handleEvaluateScanned = () => {
         if (!scannedUser || !selectedStation) return;
         const target = stations.find((s) => s.id === selectedStation);
-        if (!target || target.role !== 'evaluator') {
-            setScanError('You are not eligible to evaluate this station. Reach mastery and pass the next station first.');
+        if (!target || (target.role !== 'evaluator' && target.role !== 'teacher')) {
+            setScanError('You are not eligible to evaluate this station.');
             return;
         }
         nav(`/evaluate/station/${selectedStation}?studentId=${scannedUser.id}`);
@@ -198,7 +198,7 @@ export default function EvaluateSelectStation() {
                             <p className="no-stations-message">No stations available yet.</p>
                         )}
                         {stations.map((station) => {
-                            const canEvaluate = station.role === 'evaluator';
+                            const canEvaluate = station.role === 'evaluator' || station.role === 'teacher';
                             return (
                                 <div
                                     key={station.id}

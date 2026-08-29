@@ -23,7 +23,7 @@ export default function BottomNav() {
             try {
                 const stations = await UserManager.getUserStationRoles(UserManager.currentUser.id!);
                 // const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
-                const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'instructor');
+                const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'teacher');
                 // setCanEvaluateAnywhere(evaluatorSomewhere);
                 setHasAnyStationRole(roleSomewhere);
             } catch {

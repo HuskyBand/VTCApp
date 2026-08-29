@@ -174,7 +174,7 @@ export default function StationManagement() {
                                                 value={editState.teachingSteps}
                                                 onChange={(e) => setEditState({ ...editState, teachingSteps: e.target.value })}
                                                 rows={5}
-                                                placeholder="Detailed teaching instructions for Instructors and Evaluators only"
+                                                placeholder="Detailed teaching instructions for Teachers and Evaluators only"
                                             />
                                         </div>
                                         <div className="form-group">
@@ -293,7 +293,7 @@ export default function StationManagement() {
                                 value={newStation.testSteps}
                                 onChange={(e) => setNewStation({ ...newStation, testSteps: e.target.value })}
                                 rows={5}
-                                placeholder="Detailed evaluation instructions for Evaluators only"
+                                placeholder="Detailed evaluation instructions for Teachers and Evaluators only"
                             />
                         </div>
                         <button className="button primary" onClick={handleCreate}>Create Station</button>
