@@ -42,6 +42,6 @@ describe('getStatusLabel', () => {
         expect(getStatusLabel('novice')).toBe('Novice');
         expect(getStatusLabel('developing')).toBe('Developing');
         expect(getStatusLabel('proficient')).toBe('Proficient');
-        expect(getStatusLabel('mastery')).toBe('Mastery');
+        expect(getStatusLabel('mastery')).toBe('Mastered');
     });
 });
