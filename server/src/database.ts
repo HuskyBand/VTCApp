@@ -441,6 +441,32 @@ export class Database {
         });
     }
 
+    deleteUser(username: string): Promise<boolean> {
+        return new Promise((resolve, _reject) => {
+            this.getUserByUsername(username)
+                .then((user) => {
+                    if (!user) {
+                        resolve(false);
+                        return;
+                    }
+
+                    this.db.run("DELETE FROM evaluations WHERE userId = ?", [user.id], (err) => {
+                        if (err) { resolve(false); } else { resolve(true); }
+                    });
+
+                    this.db.run("DELETE FROM evaluations WHERE evaluatorId = ?", [user.id], (err) => {
+                        if (err) { resolve(false); } else { resolve(true); }
+                    });
+
+                    this.db.run("DELETE FROM users WHERE id = ?", [user.id], (err) => {
+                        if (err) { resolve(false); } else { resolve(true); }
+                    });
+                }).catch(() => {
+                    resolve(false);
+                });
+        })
+    }
+
     getAllUsers(): Promise<(User & { id: number })[]> {
         return new Promise((resolve, reject) => {
             this.db.all(
