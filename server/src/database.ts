@@ -180,6 +180,9 @@ export class Database {
                 if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'teachInstructions')) {
                     this.db.run("ALTER TABLE stations ADD COLUMN teachInstructions TEXT NOT NULL");
                 }
+                if (!err && Array.isArray(rows) && !rows.some((row) => row.name === 'teachInstructions')) {
+                    this.db.run("ALTER TABLE stations ADD COLUMN testInstructions TEXT NOT NULL");
+                }
             });
         });
     }
