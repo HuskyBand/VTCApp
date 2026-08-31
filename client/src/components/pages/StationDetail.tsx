@@ -248,7 +248,7 @@ export default function StationDetail() {
                                         </svg>
                                     </NavLink>
                                 </div>
-                            ) : (station.role === 'evaluator' ? (
+                            ) : ((station.role === 'evaluator' || station.role === 'teacher') ? (
                                 <NavLink className="button secondary" to={`/evaluate/station/${station.id}`}>Begin Evaluating</NavLink>
                             ) : (atMastery ? (
                                 <p className="mastery-note">You've already reached mastery for this station.</p>

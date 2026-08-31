@@ -233,7 +233,7 @@ export default function EvaluationForm() {
     };
 
     const currentStationId = Number(stationId);
-    const currentEligibility = stationRole === 'evaluator';
+    const currentEligibility = stationRole === 'evaluator' || stationRole === 'teacher';
     const targetAtMastery = selectedUser ? isMasteryLocked(targetEvaluations, currentStationId) : false;
 
     const overallStatus = getOverallStatus();
