@@ -27,9 +27,9 @@ export default function StationFeedbackView() {
                 loadStations();
                 return;
             }
-            const stations = await UserManager.getStations();
-            const hasRoleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'teacher');
-            if (!hasRoleSomewhere) { nav('/'); return; }
+            // const stations = await UserManager.getStations();
+            // const hasRoleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'teacher');
+            // if (!hasRoleSomewhere) { nav('/'); return; }
             loadStations();
         };
         check();
