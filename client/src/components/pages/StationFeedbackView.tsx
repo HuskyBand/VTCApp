@@ -47,7 +47,7 @@ export default function StationFeedbackView() {
                 <div>
                     <h1>Station Reference</h1>
                     <p>Evaluation criteria and common feedback areas for each station — for teaching reference.</p>
-                    {stations && stations.findIndex((s) => (s.role === 'evaluator' || s.role === 'teacher')) >= 0 &&
+                    {/*stations && stations.findIndex((s) => (s.role === 'evaluator' || s.role === 'teacher')) >= 0 && */
                         <a href="/rubric.pdf" target="_blank">See full rubric for grading criteria</a>}
                     {error && <div className="message error-message">{error}</div>}
                     {stations ? (stations.length === 0 && !error && <p>No stations configured yet.</p>) :

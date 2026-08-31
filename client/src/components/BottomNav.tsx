@@ -1,42 +1,42 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import UserManager from "@client/stores/UserManager";
 
 export default function BottomNav() {
     const canViewAdmin = UserManager.isDirector;
     // const [canEvaluateAnywhere, setCanEvaluateAnywhere] = useState(UserManager.isDirector || UserManager.isElevated);
-    const [hasAnyStationRole, setHasAnyStationRole] = useState(
-        UserManager.isDirector ||
-        UserManager.isElevated ||
-        UserManager.cacheFlags.referenceVisible
-    );
+    // const [hasAnyStationRole, setHasAnyStationRole] = useState(
+    //     UserManager.isDirector ||
+    //     UserManager.isElevated ||
+    //     UserManager.cacheFlags.referenceVisible
+    // );
 
-    useEffect(() => {
-        const loadStationAccess = async () => {
-            if (!UserManager.isLoggedIn) return;
+    // useEffect(() => {
+    //     const loadStationAccess = async () => {
+    //         if (!UserManager.isLoggedIn) return;
 
-            if (UserManager.isDirector || UserManager.isElevated) {
-                // setCanEvaluateAnywhere(true);
-                setHasAnyStationRole(true);
-                return;
-            }
-            try {
-                const stations = await UserManager.getUserStationRoles(UserManager.currentUser.id!);
-                // const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
-                const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'teacher');
-                // setCanEvaluateAnywhere(evaluatorSomewhere);
-                setHasAnyStationRole(roleSomewhere);
-            } catch {
-                // setCanEvaluateAnywhere(false);
-                setHasAnyStationRole(false);
-            }
-        };
-        loadStationAccess();
-    }, []);
+    //         if (UserManager.isDirector || UserManager.isElevated) {
+    //             // setCanEvaluateAnywhere(true);
+    //             setHasAnyStationRole(true);
+    //             return;
+    //         }
+    //         try {
+    //             const stations = await UserManager.getUserStationRoles(UserManager.currentUser.id!);
+    //             // const evaluatorSomewhere = (stations ?? []).some((s) => s.role === 'evaluator');
+    //             const roleSomewhere = (stations ?? []).some((s) => s.role === 'evaluator' || s.role === 'teacher');
+    //             // setCanEvaluateAnywhere(evaluatorSomewhere);
+    //             setHasAnyStationRole(roleSomewhere);
+    //         } catch {
+    //             // setCanEvaluateAnywhere(false);
+    //             setHasAnyStationRole(false);
+    //         }
+    //     };
+    //     loadStationAccess();
+    // }, []);
 
     const showQR = false; // UserManager.isLoggedIn && !canViewAdmin;
     const showEvaluate = false; // canViewAdmin || canEvaluateAnywhere;
-    const showReference = hasAnyStationRole && !canViewAdmin;
+    const showReference = !canViewAdmin;
 
     return (
         <nav className="bottom-nav">
