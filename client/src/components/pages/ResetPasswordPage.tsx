@@ -2,10 +2,6 @@ import UserManager from '@client/stores/UserManager';
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router';
 
-type ErrorBody = {
-	error: string
-}
-
 export default function ResetPasswordPage() {
 	const nav = useNavigate();
 	const [credentials, setCredentials] = React.useState({ username: '', email: '', password: '', confirmPassword: '' });
