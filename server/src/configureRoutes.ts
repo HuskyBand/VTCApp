@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { Database } from './database';
 import type { User } from '@api/user/User';
 import { PermFlags } from '@api/user/User';
-import type { LoginPayload, RegisterPayload, LoginResponse } from '@api/auth/Login';
+import type { LoginPayload, RegisterPayload, LoginResponse, ResetPasswordPayload } from '@api/auth/Login';
 import { resolveStationRole } from './stationRole';
 import { join } from 'path';
 
@@ -267,6 +267,24 @@ export default function configureRoutes(routes: Hono, db: Database) {
         await db.updateUser(userId, updates);
         const updatedUser = await db.getUserById(userId);
         return c.json(updatedUser);
+    });
+
+    routes.post('/auth/resetpass', async (c) => {
+        const body = await c.req.json() as ResetPasswordPayload;
+        const user = await db.getUserByUsername(body.username);
+
+        if (!user) {
+            return c.json({ error: 'Username not found' }, 404);
+        }
+
+        if (user.email !== body.email) {
+            return c.json({ error: 'Email does not match' }, 401);
+        }
+
+        const passwordHash = await Database.hashPassword(body.password);
+        await db.resetPassword(user.id, passwordHash);
+
+        return c.json({ message: 'Success' }, 200);
     });
 
     routes.get('/users', authMiddleware, async (c) => {

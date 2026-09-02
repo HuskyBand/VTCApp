@@ -61,6 +61,7 @@ export default function LoginPage() {
 							required
 							className="text-input"
 						/>
+						<p className="reset-sub-text"><NavLink to="/reset-password">Forgot password?</NavLink></p>
 					</div>
 					{error && <p className="error-message">{error}</p>}
 					<button type="submit" className="button primary auth-submit">Sign in</button>

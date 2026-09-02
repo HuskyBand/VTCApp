@@ -1099,3 +1099,19 @@ code {
     padding-left: 0;
   }
 }
+
+.reset-sub-text {
+    text-align: right;
+    font-size: 14px;
+}
+
+.reset-sub-text p {
+    margin: 0;
+    color: var(--text-sh);
+}
+
+.reset-sub-text a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}

@@ -5,6 +5,12 @@ export type LoginPayload = {
     password: string
 }
 
+export type ResetPasswordPayload = {
+    username: string,
+    email: string,
+    password: string
+}
+
 export type RegisterPayload = {
     username: string,
     password: string,

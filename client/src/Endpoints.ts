@@ -6,7 +6,8 @@ export const Endpoints = {
         register: '/auth/register',
         logout: '/auth/logout',
         me: '/auth/me',
-        profile: '/auth/profile'
+        profile: '/auth/profile',
+        resetPass: '/auth/resetpass'
     },
 
     users: {

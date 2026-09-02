@@ -343,8 +343,12 @@ export class Database {
         });
     }
 
+    static hashPassword(password: string): Promise<string> {
+        return bcrypt.hash(password, 10);
+    }
+
     async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User & { id: number }> {
-        const passwordHash = await bcrypt.hash(user.password, 10);
+        const passwordHash = await Database.hashPassword(user.password);
 
         return new Promise((resolve, reject) => {
             const sql = `
@@ -398,6 +402,21 @@ export class Database {
         const user = await this.getUserByUsername(username);
         if (!user) return false;
         return bcrypt.compare(password, user.passwordHash);
+    }
+
+    resetPassword(id: number, passwordHash: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.run('UPDATE users SET passwordHash = ? WHERE id = ?',
+                [passwordHash, id], (err) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve();
+                }
+            );
+        });
     }
 
     getUserById(id: number): Promise<User & { id: number } | null> {

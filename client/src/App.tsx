@@ -29,6 +29,7 @@ import StationManagement from "./components/pages/StationManagement";
 import DirectorOverview from "./components/pages/DirectorOverview";
 import RequireAuth from "./components/RequireAuth";
 import BroadcastPopup from "./components/BroadcastPopup";
+import ResetPasswordPage from "./components/pages/ResetPasswordPage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
 				<Route path="/logout" element={<LogoutPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/register" element={<RegisterPage />} />
+				<Route path="/reset-password" element={<ResetPasswordPage />} />
 				<Route path="/profile-setup" element={<ProfileSetupPage />} />
 				<Route path="/profile" element={<RequireAuth><ProfileSettingsPage /></RequireAuth>} />
 				<Route path="/permissions" element={

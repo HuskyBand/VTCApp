@@ -1,4 +1,4 @@
-import { type LoginPayload, type LoginResponse, type RegisterPayload } from '@api/auth/Login.ts';
+import { type LoginPayload, type LoginResponse, type RegisterPayload, type ResetPasswordPayload } from '@api/auth/Login.ts';
 import { PermFlags, type User } from '@api/user/User';
 import type { StationRole } from '@api/station/StationRole';
 import { Endpoints } from '@client/Endpoints';
@@ -206,6 +206,21 @@ class UserManager {
 
         this.setUser(response.body.token, response.body.user);
         return true;
+    }
+
+    resetPassword(username: string, email: string, password: string): Promise<void> {
+        const request: ResetPasswordPayload = { username, email, password };
+
+        return new Promise((resolve, reject) => {
+            http.post(Endpoints.auth.resetPass, request).then((response) => {
+                if (!response.ok) {
+                    const body = response.body as unknown as { error?: string } | undefined;
+                    reject(response.err ?? body?.error);
+                }
+
+                resolve();
+            }).catch((reason) => reject(reason));
+        });
     }
 
     async updateProfile(updates: Partial<User>): Promise<boolean> {
